@@ -16,11 +16,12 @@ $action = $input['action'] ?? '';
 $p = $input['payload'] ?? [];
 $store = load_data();
 
-function find_project(&$store, $id) {
+function &find_project(&$store, $id) {
     foreach ($store['projects'] as &$proj) {
         if ($proj['id'] === $id) return $proj;
     }
-    return null;
+    $null = null;
+    return $null;
 }
 
 switch ($action) {
