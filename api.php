@@ -36,9 +36,23 @@ switch ($action) {
             'next' => trim($p['next'] ?? ''),
             'notes' => trim($p['notes'] ?? ''),
             'chat_url' => trim($p['chat_url'] ?? ''),
+            'created' => date('c'),
             'steps' => [],
             'links' => [],
         ];
+        break;
+
+    case 'projects_reorder':
+        $order = $p['order'] ?? [];
+        $byId = [];
+        foreach ($store['projects'] as $proj) { $byId[$proj['id']] = $proj; }
+        $reordered = [];
+        foreach ($order as $id) {
+            if (isset($byId[$id])) { $reordered[] = $byId[$id]; unset($byId[$id]); }
+        }
+        // Etwaige nicht in order enthaltene Projekte hinten anhängen (Sicherheitsnetz)
+        foreach ($byId as $rest) { $reordered[] = $rest; }
+        $store['projects'] = $reordered;
         break;
 
     case 'project_update':

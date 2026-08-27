@@ -33,6 +33,11 @@ if ($secret !== WEBHOOK_SECRET) {
   .btn.teal{background:var(--teal);}
   .btn.small{padding:5px 9px;font-size:12px;}
   .toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px;}
+  .toolbar select{width:auto;}
+  .drag-handle{cursor:grab;color:var(--muted);padding:0 4px;flex:none;}
+  .card.dragging{opacity:.4;}
+  .settings-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:14px;}
+  .settings-row select{width:auto;font-size:12px;padding:5px 8px;}
   .spacer{flex:1;}
   .card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--muted);border-radius:8px;padding:0;margin-bottom:10px;overflow:hidden;}
   .card.idee{border-left-color:var(--violet);}
@@ -78,14 +83,24 @@ if ($secret !== WEBHOOK_SECRET) {
     <span id="deployStatus" style="font-size:12px;color:var(--muted);"></span>
   </div>
 
+  <div class="settings-row">
+    ⚙️ Dashboard startet mit:
+    <select id="startTabSetting">
+      <option value="projects">Projekte</option>
+      <option value="inbox">Inbox</option>
+      <option value="news">News</option>
+      <option value="links">Links</option>
+    </select>
+  </div>
+
   <div class="tabs">
-    <div class="tab active" data-tab="projects">Projekte</div>
+    <div class="tab" data-tab="projects">Projekte</div>
     <div class="tab" data-tab="inbox">Inbox</div>
     <div class="tab" data-tab="news">📰 News</div>
     <div class="tab" data-tab="links">🔗 Links</div>
   </div>
 
-  <div class="panel active" id="panel-projects">
+  <div class="panel" id="panel-projects">
     <div class="toolbar">
       <select id="filterStatus">
         <option value="alle">Alle Status</option>
@@ -93,6 +108,11 @@ if ($secret !== WEBHOOK_SECRET) {
         <option value="arbeit">In Arbeit</option>
         <option value="pausiert">Pausiert</option>
         <option value="fertig">Abgeschlossen</option>
+      </select>
+      <select id="sortMode">
+        <option value="manual">Sortierung: Manuell</option>
+        <option value="alpha">Sortierung: Alphabetisch</option>
+        <option value="chrono">Sortierung: Chronologisch (neueste zuerst)</option>
       </select>
       <span class="spacer"></span>
       <button class="btn" id="addProjectBtn">+ Neues Projekt</button>
@@ -138,34 +158,56 @@ function esc(s) {
 function isUrl(s) { return /^https?:\/\//i.test((s||'').trim()); }
 
 // ── Tabs ──────────────────────────────────────────────
+function activateTab(name) {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
+  document.querySelectorAll('.panel').forEach(x => x.classList.toggle('active', x.id === 'panel-' + name));
+}
 document.querySelectorAll('.tab').forEach(t => {
-  t.onclick = () => {
-    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
-    t.classList.add('active');
-    document.getElementById('panel-' + t.dataset.tab).classList.add('active');
-  };
+  t.onclick = () => activateTab(t.dataset.tab);
 });
+
+// Start-Kategorie: Einstellung merken (im Browser, pro Gerät)
+const startTabSel = document.getElementById('startTabSetting');
+const savedStartTab = localStorage.getItem('dashboard_start_tab') || 'projects';
+startTabSel.value = savedStartTab;
+activateTab(savedStartTab);
+startTabSel.onchange = () => {
+  localStorage.setItem('dashboard_start_tab', startTabSel.value);
+  activateTab(startTabSel.value);
+};
 
 // ── Projekte ──────────────────────────────────────────
 const expandedIds = new Set();
 
 function renderProjects() {
   const filter = document.getElementById('filterStatus').value;
+  const sortMode = document.getElementById('sortMode').value;
   const board = document.getElementById('projectsBoard');
-  const list = store.projects.filter(p => filter === 'alle' || p.status === filter);
+  let list = store.projects.filter(p => filter === 'alle' || p.status === filter);
+
+  if (sortMode === 'alpha') {
+    list = [...list].sort((a, b) => a.title.localeCompare(b.title, 'de'));
+  } else if (sortMode === 'chrono') {
+    list = [...list].sort((a, b) => new Date(b.created || 0) - new Date(a.created || 0));
+  }
+  // 'manual' → Reihenfolge wie in store.projects (per Drag & Drop steuerbar)
+
   board.innerHTML = list.length ? '' : '<div class="empty">Keine Projekte.</div>';
 
   list.forEach(p => {
     const isOpen = expandedIds.has(p.id);
     const card = document.createElement('div');
     card.className = 'card ' + p.status + (isOpen ? ' open' : '');
+    card.dataset.id = p.id;
+    if (sortMode === 'manual') card.draggable = true;
 
     const openSteps = (p.steps||[]).filter(s => !s.done).length;
     const previewParts = [];
     if (p.next) previewParts.push(p.next);
     else if (openSteps) previewParts.push(openSteps + ' offene Schritte');
     const preview = previewParts.join(' · ');
+
+    const dragHandle = sortMode === 'manual' ? '<span class="drag-handle">⋮⋮</span>' : '';
 
     const stepsHtml = (p.steps||[]).map(s => `
       <div class="step ${s.done ? 'done' : ''}">
@@ -182,6 +224,7 @@ function renderProjects() {
     card.innerHTML = `
       <div class="card-header" data-toggle="${p.id}">
         <div class="card-header-left">
+          ${dragHandle}
           <span class="chevron">▶</span>
           <div>
             <div class="card-title-view">${esc(p.title)}</div>
@@ -272,8 +315,35 @@ function renderProjects() {
       if (input.value.trim()) call('link_add', { projectId: el.dataset.addlink, url: input.value.trim() });
     };
   });
+
+  // Drag & Drop (nur im Modus "Manuell")
+  if (sortMode === 'manual') {
+    let dragEl = null;
+    board.querySelectorAll('.card').forEach(cardEl => {
+      cardEl.addEventListener('dragstart', () => { dragEl = cardEl; cardEl.classList.add('dragging'); });
+      cardEl.addEventListener('dragend', () => { cardEl.classList.remove('dragging'); dragEl = null; });
+      cardEl.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!dragEl || dragEl === cardEl) return;
+        const rect = cardEl.getBoundingClientRect();
+        const after = (e.clientY - rect.top) > rect.height / 2;
+        cardEl.parentNode.insertBefore(dragEl, after ? cardEl.nextSibling : cardEl);
+      });
+      cardEl.addEventListener('drop', () => {
+        const newOrder = [...board.querySelectorAll('.card')].map(c => c.dataset.id);
+        // Reihenfolge lokal übernehmen + auf Server speichern
+        store.projects.sort((a, b) => newOrder.indexOf(a.id) - newOrder.indexOf(b.id));
+        call('projects_reorder', { order: newOrder });
+      });
+    });
+  }
 }
 document.getElementById('filterStatus').onchange = renderProjects;
+document.getElementById('sortMode').onchange = () => {
+  localStorage.setItem('dashboard_sort_mode', document.getElementById('sortMode').value);
+  renderProjects();
+};
+document.getElementById('sortMode').value = localStorage.getItem('dashboard_sort_mode') || 'manual';
 document.getElementById('addProjectBtn').onclick = async () => {
   await call('project_add', { title: 'Neues Projekt' });
   const last = store.projects[store.projects.length - 1];
