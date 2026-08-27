@@ -120,7 +120,15 @@ if ($text === '/liste' || $text === '/status') {
 }
 
 if ($text === '/hilfe' || $text === '/start') {
-    telegram_send("Schick mir einfach einen Link oder eine Idee — ich frage dann per Buttons nach, wohin sie soll.\n\nBefehle:\n/liste – aktueller Stand aller Projekte\n/inbox – offene, noch nicht zugeordnete Einträge\n/news – gespeicherte News\n/links – gespeicherte Links", $chatId);
+    telegram_send("Schick mir einfach einen Link oder eine Idee — ich frage dann per Buttons nach, wohin sie soll.\n\nBefehle:\n/liste – aktueller Stand aller Projekte\n/inbox – offene, noch nicht zugeordnete Einträge\n/news – gespeicherte News\n/links – gespeicherte Links\n/deploy – neueste Code-Version vom Repo holen", $chatId);
+    exit;
+}
+
+if ($text === '/deploy') {
+    require_once __DIR__ . '/deploy_logic.php';
+    telegram_send("🚀 Deploye…", $chatId);
+    $result = run_deploy();
+    telegram_send($result, $chatId);
     exit;
 }
 
