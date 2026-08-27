@@ -73,6 +73,11 @@ if ($secret !== WEBHOOK_SECRET) {
   <h1>📋 Dashboard</h1>
   <div class="sub" id="statusLine">Lädt…</div>
 
+  <div class="toolbar" style="margin-bottom:14px;">
+    <button class="btn ghost" id="deployBtn">🚀 Deploy</button>
+    <span id="deployStatus" style="font-size:12px;color:var(--muted);"></span>
+  </div>
+
   <div class="tabs">
     <div class="tab active" data-tab="projects">Projekte</div>
     <div class="tab" data-tab="inbox">Inbox</div>
@@ -341,6 +346,23 @@ function renderAll() {
 }
 
 call('get');
+
+document.getElementById('deployBtn').onclick = async () => {
+  const statusEl = document.getElementById('deployStatus');
+  statusEl.textContent = 'läuft…';
+  try {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: SECRET, action: 'deploy', payload: {} }),
+    });
+    const json = await res.json();
+    statusEl.textContent = json.ok ? '✅ ' + (json.message || 'fertig').split('\n')[0] : '❌ Fehler';
+    if (json.ok) alert(json.message);
+  } catch (e) {
+    statusEl.textContent = '❌ Fehler';
+  }
+};
 </script>
 </body>
 </html>

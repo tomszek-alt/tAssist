@@ -163,6 +163,12 @@ switch ($action) {
         $store['saved_links'] = array_values(array_filter($store['saved_links'], fn($l) => $l['id'] !== ($p['id'] ?? '')));
         break;
 
+    case 'deploy':
+        require_once __DIR__ . '/deploy_logic.php';
+        $message = run_deploy();
+        echo json_encode(['ok' => true, 'data' => $store, 'message' => $message]);
+        exit;
+
     default:
         http_response_code(400);
         echo json_encode(['ok' => false, 'error' => 'unknown action']);
