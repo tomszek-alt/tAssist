@@ -114,6 +114,21 @@ switch ($action) {
         unset($proj);
         break;
 
+    case 'inbox_add':
+        require_once __DIR__ . '/ai_sort.php';
+        $text = trim($p['text'] ?? '');
+        if ($text === '') break;
+        $newItem = ['id' => 'i' . uniqid(), 'text' => $text, 'created' => date('c')];
+        $suggestion = claude_classify_inbox($text, $store['projects']);
+        if (!empty($suggestion['project_id'])) {
+            $newItem['suggested_project_id'] = $suggestion['project_id'];
+            $newItem['suggested_reason'] = $suggestion['reason'] ?? '';
+        } elseif (!empty($suggestion['new_title'])) {
+            $newItem['suggested_new_title'] = $suggestion['new_title'];
+        }
+        $store['inbox'][] = $newItem;
+        break;
+
     case 'inbox_assign':
         $itemId = $p['itemId'] ?? '';
         $item = null;

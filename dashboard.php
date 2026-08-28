@@ -121,6 +121,10 @@ if ($secret !== WEBHOOK_SECRET) {
   </div>
 
   <div class="panel" id="panel-inbox">
+    <div class="add-row" style="margin-bottom:14px;">
+      <input id="newInboxInput" placeholder="Link oder Idee eingeben…"/>
+      <button class="btn" id="newInboxBtn">+ Hinzufügen (KI ordnet ein)</button>
+    </div>
     <div id="inboxBoard"></div>
   </div>
 
@@ -357,9 +361,19 @@ function renderInbox() {
   store.inbox.forEach(item => {
     const el = document.createElement('div');
     el.className = 'item';
-    const projOptions = store.projects.map(p => `<option value="${p.id}">${esc(p.title)}</option>`).join('');
+    const projOptions = store.projects.map(p =>
+      `<option value="${p.id}" ${p.id === item.suggested_project_id ? 'selected' : ''}>${esc(p.title)}</option>`
+    ).join('');
+    const suggestedProj = store.projects.find(p => p.id === item.suggested_project_id);
+    let hint = '';
+    if (suggestedProj) {
+      hint = `<div style="font-size:12px;color:var(--teal);margin-top:4px;">🤖 Vorschlag: ${esc(suggestedProj.title)}${item.suggested_reason ? ' — ' + esc(item.suggested_reason) : ''}</div>`;
+    } else if (item.suggested_new_title) {
+      hint = `<div style="font-size:12px;color:var(--teal);margin-top:4px;">🤖 Vorschlag: neues Projekt „${esc(item.suggested_new_title)}"</div>`;
+    }
     el.innerHTML = `
       <div>${isUrl(item.text) ? `<a href="${esc(item.text)}" target="_blank" style="color:var(--teal)">${esc(item.text)}</a>` : esc(item.text)}</div>
+      ${hint}
       <div class="actions">
         <select data-assign-sel="${item.id}"><option value="">→ Projekt wählen…</option>${projOptions}</select>
         <button class="btn small" data-assign-go="${item.id}">Zuordnen</button>
@@ -414,6 +428,26 @@ function renderAll() {
   document.getElementById('statusLine').textContent =
     `${store.projects.length} Projekte · ${store.inbox.length} in Inbox · ${store.news.length} News · ${store.saved_links.length} Links`;
 }
+
+document.getElementById('newInboxBtn').onclick = async () => {
+  const input = document.getElementById('newInboxInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const btn = document.getElementById('newInboxBtn');
+  btn.disabled = true;
+  btn.textContent = 'KI ordnet ein…';
+  try {
+    await call('inbox_add', { text });
+    input.value = '';
+    activateTab('inbox');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '+ Hinzufügen (KI ordnet ein)';
+  }
+};
+document.getElementById('newInboxInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('newInboxBtn').click();
+});
 
 call('get');
 
