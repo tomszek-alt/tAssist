@@ -129,10 +129,18 @@ if ($secret !== WEBHOOK_SECRET) {
   </div>
 
   <div class="panel" id="panel-news">
+    <div class="add-row" style="margin-bottom:14px;">
+      <input id="newNewsInput" placeholder="News-Eintrag…"/>
+      <button class="btn" id="newNewsBtn">+ Hinzufügen</button>
+    </div>
     <div id="newsBoard"></div>
   </div>
 
   <div class="panel" id="panel-links">
+    <div class="add-row" style="margin-bottom:14px;">
+      <input id="newLinkInput" placeholder="Link…"/>
+      <button class="btn" id="newLinkBtn">+ Hinzufügen</button>
+    </div>
     <div id="linksBoard"></div>
   </div>
 </div>
@@ -448,6 +456,18 @@ document.getElementById('newInboxBtn').onclick = async () => {
 document.getElementById('newInboxInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') document.getElementById('newInboxBtn').click();
 });
+
+document.getElementById('newNewsBtn').onclick = () => {
+  const input = document.getElementById('newNewsInput');
+  if (input.value.trim()) { call('news_add', { text: input.value.trim() }); input.value = ''; }
+};
+document.getElementById('newNewsInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('newNewsBtn').click(); });
+
+document.getElementById('newLinkBtn').onclick = () => {
+  const input = document.getElementById('newLinkInput');
+  if (input.value.trim()) { call('saved_link_add', { text: input.value.trim() }); input.value = ''; }
+};
+document.getElementById('newLinkInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('newLinkBtn').click(); });
 
 call('get');
 

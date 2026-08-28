@@ -185,6 +185,18 @@ switch ($action) {
         $store['inbox'] = array_values(array_filter($store['inbox'], fn($i) => $i['id'] !== ($p['itemId'] ?? '')));
         break;
 
+    case 'news_add':
+        if (trim($p['text'] ?? '') !== '') {
+            $store['news'][] = ['id' => 'n' . uniqid(), 'text' => trim($p['text']), 'created' => date('c')];
+        }
+        break;
+
+    case 'saved_link_add':
+        if (trim($p['text'] ?? '') !== '') {
+            $store['saved_links'][] = ['id' => 'sl' . uniqid(), 'text' => trim($p['text']), 'created' => date('c')];
+        }
+        break;
+
     case 'news_delete':
         $store['news'] = array_values(array_filter($store['news'], fn($n) => $n['id'] !== ($p['id'] ?? '')));
         break;
