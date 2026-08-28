@@ -93,12 +93,19 @@ if ($secret !== WEBHOOK_SECRET) {
     </select>
   </div>
 
-  <div class="tabs">
+  <div class="tabs" id="fixedTabs">
     <div class="tab" data-tab="projects">Projekte</div>
     <div class="tab" data-tab="inbox">Inbox</div>
     <div class="tab" data-tab="news">📰 News</div>
     <div class="tab" data-tab="links">🔗 Links</div>
   </div>
+  <div class="tabs" id="customTabs"></div>
+  <div class="settings-row">
+    <input id="newCollectionName" placeholder="Name neue Kategorie…" style="width:auto;font-size:12px;padding:5px 8px;"/>
+    <button class="btn ghost small" id="addCollectionBtn">+ Kategorie anlegen</button>
+  </div>
+
+  <div id="customPanels"></div>
 
   <div class="panel" id="panel-projects">
     <div class="toolbar">
@@ -174,8 +181,9 @@ function activateTab(name) {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
   document.querySelectorAll('.panel').forEach(x => x.classList.toggle('active', x.id === 'panel-' + name));
 }
-document.querySelectorAll('.tab').forEach(t => {
-  t.onclick = () => activateTab(t.dataset.tab);
+document.body.addEventListener('click', e => {
+  const tabEl = e.target.closest('.tab');
+  if (tabEl) activateTab(tabEl.dataset.tab);
 });
 
 // Start-Kategorie: Einstellung merken (im Browser, pro Gerät)
@@ -269,6 +277,17 @@ function renderProjects() {
           <button class="btn small ghost" data-addlink="${p.id}">+</button>
         </div>
 
+        <div class="steps">${(p.custom_fields||[]).map(f => `
+          <div class="step">
+            <span><b>${esc(f.key)}:</b> ${esc(f.value)}</span>
+            <button data-cf-del="${p.id}:${f.id}">✕</button>
+          </div>`).join('')}</div>
+        <div class="add-row">
+          <input placeholder="Feldname" data-newcfkey="${p.id}" style="max-width:110px;"/>
+          <input placeholder="Wert" data-newcfval="${p.id}"/>
+          <button class="btn small ghost" data-addcf="${p.id}">+ Feld</button>
+        </div>
+
         <div class="row" style="margin-top:12px;">
           <button class="btn danger small" data-delproj="${p.id}">Projekt löschen</button>
         </div>
@@ -325,6 +344,17 @@ function renderProjects() {
     el.onclick = () => {
       const input = board.querySelector(`[data-newlink="${el.dataset.addlink}"]`);
       if (input.value.trim()) call('link_add', { projectId: el.dataset.addlink, url: input.value.trim() });
+    };
+  });
+  board.querySelectorAll('[data-cf-del]').forEach(el => {
+    el.onclick = () => { const [pid,fid] = el.dataset.cfDel.split(':'); call('project_customfield_delete', { projectId: pid, fieldId: fid }); };
+  });
+  board.querySelectorAll('[data-addcf]').forEach(el => {
+    el.onclick = () => {
+      const pid = el.dataset.addcf;
+      const key = board.querySelector(`[data-newcfkey="${pid}"]`).value.trim();
+      const val = board.querySelector(`[data-newcfval="${pid}"]`).value.trim();
+      if (key) call('project_customfield_add', { projectId: pid, key, value: val });
     };
   });
 
@@ -412,7 +442,10 @@ function renderNews() {
   [...store.news].reverse().forEach(n => {
     const el = document.createElement('div');
     el.className = 'item';
-    el.innerHTML = `<div>${esc(n.text)}</div><div class="actions"><button class="btn small danger" data-newsdel="${n.id}">🗑</button></div>`;
+    const display = isUrl(n.text)
+      ? `<a href="${esc(n.text)}" target="_blank" style="color:var(--teal)">${esc(n.text)}</a>`
+      : `<a href="https://www.google.com/search?q=${encodeURIComponent(n.text)}" target="_blank" style="color:var(--teal)">${esc(n.text)} 🔍</a>`;
+    el.innerHTML = `<div>${display}</div><div class="actions"><button class="btn small danger" data-newsdel="${n.id}">🗑</button></div>`;
     board.appendChild(el);
   });
   board.querySelectorAll('[data-newsdel]').forEach(b => b.onclick = () => call('news_delete', { id: b.dataset.newsdel }));
@@ -432,10 +465,67 @@ function renderLinks() {
 }
 
 function renderAll() {
-  renderProjects(); renderInbox(); renderNews(); renderLinks();
+  renderProjects(); renderInbox(); renderNews(); renderLinks(); renderCollections();
   document.getElementById('statusLine').textContent =
     `${store.projects.length} Projekte · ${store.inbox.length} in Inbox · ${store.news.length} News · ${store.saved_links.length} Links`;
 }
+
+// ── Eigene Kategorien ─────────────────────────────────
+function renderCollections() {
+  const tabsBox = document.getElementById('customTabs');
+  const panelsBox = document.getElementById('customPanels');
+  const activeTabName = document.querySelector('.tab.active')?.dataset.tab;
+
+  tabsBox.innerHTML = (store.collections || []).map(c =>
+    `<div class="tab" data-tab="col_${c.id}">${esc(c.name)}</div>`
+  ).join('');
+
+  panelsBox.innerHTML = (store.collections || []).map(c => `
+    <div class="panel" id="panel-col_${c.id}">
+      <div class="row" style="margin-bottom:10px;">
+        <button class="btn danger small" data-coldel="${c.id}">Kategorie „${esc(c.name)}" löschen</button>
+      </div>
+      <div class="add-row" style="margin-bottom:14px;">
+        <input placeholder="Titel" data-citem-title="${c.id}"/>
+        <input placeholder="Notiz (optional)" data-citem-note="${c.id}"/>
+        <input placeholder="Link (optional)" data-citem-url="${c.id}"/>
+        <button class="btn small" data-citem-add="${c.id}">+</button>
+      </div>
+      ${c.items.length ? '' : '<div class="empty">Noch keine Einträge.</div>'}
+      ${[...c.items].reverse().map(i => `
+        <div class="item">
+          <div>${i.url ? `<a href="${esc(i.url)}" target="_blank" style="color:var(--teal)">${esc(i.title)}</a>` : esc(i.title)}</div>
+          ${i.note ? `<div style="color:var(--muted);font-size:12px;margin-top:2px;">${esc(i.note)}</div>` : ''}
+          <div class="actions"><button class="btn small danger" data-citem-del="${c.id}:${i.id}">🗑</button></div>
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
+
+  // Aktiven Tab/Panel erhalten
+  if (activeTabName && activeTabName.startsWith('col_')) activateTab(activeTabName);
+
+  panelsBox.querySelectorAll('[data-coldel]').forEach(b => {
+    b.onclick = () => { if (confirm('Kategorie wirklich löschen?')) call('collection_delete', { id: b.dataset.coldel }); };
+  });
+  panelsBox.querySelectorAll('[data-citem-add]').forEach(b => {
+    b.onclick = () => {
+      const cid = b.dataset.citemAdd;
+      const title = panelsBox.querySelector(`[data-citem-title="${cid}"]`).value.trim();
+      const note = panelsBox.querySelector(`[data-citem-note="${cid}"]`).value.trim();
+      const url = panelsBox.querySelector(`[data-citem-url="${cid}"]`).value.trim();
+      if (title) call('collection_item_add', { collectionId: cid, title, note, url });
+    };
+  });
+  panelsBox.querySelectorAll('[data-citem-del]').forEach(b => {
+    b.onclick = () => { const [cid, iid] = b.dataset.citemDel.split(':'); call('collection_item_delete', { collectionId: cid, itemId: iid }); };
+  });
+}
+
+document.getElementById('addCollectionBtn').onclick = () => {
+  const input = document.getElementById('newCollectionName');
+  if (input.value.trim()) { call('collection_add', { name: input.value.trim() }); input.value = ''; }
+};
 
 document.getElementById('newInboxBtn').onclick = async () => {
   const input = document.getElementById('newInboxInput');

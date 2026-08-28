@@ -205,6 +205,57 @@ switch ($action) {
         $store['saved_links'] = array_values(array_filter($store['saved_links'], fn($l) => $l['id'] !== ($p['id'] ?? '')));
         break;
 
+    case 'project_customfield_add':
+        $proj = &find_project($store, $p['projectId'] ?? '');
+        if ($proj && trim($p['key'] ?? '') !== '') {
+            $proj['custom_fields'] = $proj['custom_fields'] ?? [];
+            $proj['custom_fields'][] = ['id' => 'cf' . uniqid(), 'key' => trim($p['key']), 'value' => trim($p['value'] ?? '')];
+        }
+        unset($proj);
+        break;
+
+    case 'project_customfield_delete':
+        $proj = &find_project($store, $p['projectId'] ?? '');
+        if ($proj) {
+            $proj['custom_fields'] = array_values(array_filter($proj['custom_fields'] ?? [], fn($f) => $f['id'] !== ($p['fieldId'] ?? '')));
+        }
+        unset($proj);
+        break;
+
+    case 'collection_add':
+        if (trim($p['name'] ?? '') !== '') {
+            $store['collections'][] = ['id' => 'col' . uniqid(), 'name' => trim($p['name']), 'items' => []];
+        }
+        break;
+
+    case 'collection_delete':
+        $store['collections'] = array_values(array_filter($store['collections'], fn($c) => $c['id'] !== ($p['id'] ?? '')));
+        break;
+
+    case 'collection_item_add':
+        foreach ($store['collections'] as &$col) {
+            if ($col['id'] === ($p['collectionId'] ?? '') && trim($p['title'] ?? '') !== '') {
+                $col['items'][] = [
+                    'id' => 'ci' . uniqid(),
+                    'title' => trim($p['title']),
+                    'note' => trim($p['note'] ?? ''),
+                    'url' => trim($p['url'] ?? ''),
+                    'created' => date('c'),
+                ];
+            }
+        }
+        unset($col);
+        break;
+
+    case 'collection_item_delete':
+        foreach ($store['collections'] as &$col) {
+            if ($col['id'] === ($p['collectionId'] ?? '')) {
+                $col['items'] = array_values(array_filter($col['items'], fn($i) => $i['id'] !== ($p['itemId'] ?? '')));
+            }
+        }
+        unset($col);
+        break;
+
     case 'deploy':
         require_once __DIR__ . '/deploy_logic.php';
         $message = run_deploy();
