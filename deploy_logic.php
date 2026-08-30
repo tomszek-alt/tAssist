@@ -8,7 +8,7 @@ function deploy_allowed_files() {
     return [
         'webhook.php', 'storage.php', 'telegram.php', 'ai_sort.php',
         'cron_reminder.php', 'world_news.php', 'news.php', 'dashboard.php',
-        'api.php',
+        'api.php', 'video_summary.php',
     ];
 }
 

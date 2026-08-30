@@ -3,6 +3,7 @@ require_once __DIR__ . '/../../../.configs/config.php';
 require_once __DIR__ . '/storage.php';
 require_once __DIR__ . '/telegram.php';
 require_once __DIR__ . '/ai_sort.php';
+require_once __DIR__ . '/video_summary.php';
 
 function send_assign_prompt($item, $chatId, $projects, $suggestion = null) {
     $buttons = [];
@@ -12,6 +13,9 @@ function send_assign_prompt($item, $chatId, $projects, $suggestion = null) {
         if ($projTitle) {
             $buttons[] = [['text' => "→ {$projTitle}", 'callback_data' => "assign:{$item['id']}:{$suggestion['project_id']}"]];
         }
+    }
+    if (extract_youtube_id($item['text'])) {
+        $buttons[] = [['text' => "🎬 Video zusammenfassen", 'callback_data' => "ytsum:{$item['id']}"]];
     }
     $buttons[] = [['text' => "+ Neues Projekt", 'callback_data' => "newproj:{$item['id']}"]];
     $buttons[] = [['text' => "📰 News", 'callback_data' => "news:{$item['id']}"], ['text' => "🔗 Link", 'callback_data' => "link:{$item['id']}"]];
@@ -58,6 +62,13 @@ if (isset($update['callback_query'])) {
     $store = load_data();
     $item = null;
     foreach ($store['inbox'] as $i) { if ($i['id'] === $inboxId) { $item = $i; break; } }
+
+    if ($item && $action === 'ytsum') {
+        telegram_send("🎬 Fasse Video zusammen…", $chatId);
+        $summary = summarize_youtube_url($item['text']);
+        telegram_send($summary, $chatId);
+        exit;
+    }
 
     if ($item) {
         if ($action === 'assign') {

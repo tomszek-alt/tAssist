@@ -256,6 +256,12 @@ switch ($action) {
         unset($col);
         break;
 
+    case 'youtube_summary':
+        require_once __DIR__ . '/video_summary.php';
+        $summary = summarize_youtube_url($p['url'] ?? '');
+        echo json_encode(['ok' => true, 'data' => $store, 'message' => $summary]);
+        exit;
+
     case 'deploy':
         require_once __DIR__ . '/deploy_logic.php';
         $message = run_deploy();

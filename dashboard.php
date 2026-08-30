@@ -175,6 +175,23 @@ function esc(s) {
   return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function isUrl(s) { return /^https?:\/\//i.test((s||'').trim()); }
+function isYoutube(s) { return /(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/shorts\/)/i.test(s||''); }
+async function summarizeYoutube(url, btn) {
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = '⏳…';
+  try {
+    const res = await fetch(API, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret: SECRET, action: 'youtube_summary', payload: { url } }),
+    });
+    const json = await res.json();
+    alert(json.message || 'Fehler');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
+}
 
 // ── Tabs ──────────────────────────────────────────────
 function activateTab(name) {
@@ -416,6 +433,7 @@ function renderInbox() {
         <select data-assign-sel="${item.id}"><option value="">→ Projekt wählen…</option>${projOptions}</select>
         <button class="btn small" data-assign-go="${item.id}">Zuordnen</button>
         <button class="btn small ghost" data-newproj="${item.id}">+ Neues Projekt</button>
+        ${isYoutube(item.text) ? `<button class="btn small teal" data-ytsum="${esc(item.text)}">🎬 Zusammenfassen</button>` : ''}
         <button class="btn small teal" data-tonews="${item.id}">📰 News</button>
         <button class="btn small teal" data-tolink="${item.id}">🔗 Link</button>
         <button class="btn small danger" data-inboxdel="${item.id}">🗑</button>
@@ -423,6 +441,7 @@ function renderInbox() {
     `;
     board.appendChild(el);
   });
+  board.querySelectorAll('[data-ytsum]').forEach(b => b.onclick = () => summarizeYoutube(b.dataset.ytsum, b));
   board.querySelectorAll('[data-assign-go]').forEach(b => {
     b.onclick = () => {
       const sel = board.querySelector(`[data-assign-sel="${b.dataset.assignGo}"]`);
@@ -458,9 +477,10 @@ function renderLinks() {
   [...store.saved_links].reverse().forEach(l => {
     const el = document.createElement('div');
     el.className = 'item';
-    el.innerHTML = `<div>${isUrl(l.text) ? `<a href="${esc(l.text)}" target="_blank" style="color:var(--teal)">${esc(l.text)}</a>` : esc(l.text)}</div><div class="actions"><button class="btn small danger" data-linkdel="${l.id}">🗑</button></div>`;
+    el.innerHTML = `<div>${isUrl(l.text) ? `<a href="${esc(l.text)}" target="_blank" style="color:var(--teal)">${esc(l.text)}</a>` : esc(l.text)}</div><div class="actions">${isYoutube(l.text) ? `<button class="btn small teal" data-ytsum2="${esc(l.text)}">🎬 Zusammenfassen</button>` : ''}<button class="btn small danger" data-linkdel="${l.id}">🗑</button></div>`;
     board.appendChild(el);
   });
+  board.querySelectorAll('[data-ytsum2]').forEach(b => b.onclick = () => summarizeYoutube(b.dataset.ytsum2, b));
   board.querySelectorAll('[data-linkdel]').forEach(b => b.onclick = () => call('saved_link_delete', { id: b.dataset.linkdel }));
 }
 
