@@ -1,15 +1,14 @@
 <?php
 require_once __DIR__ . '/../../../.configs/config.php';
 
-// Nur diese Dateien werden vom Repo übernommen — bewusst keine config.php,
-// keine data/, kein deploy_logic.php/deploy.php selbst (verhindert, dass
-// sich das Skript mitten im eigenen Lauf selbst überschreibt).
-function deploy_allowed_files() {
-    return [
-        'webhook.php', 'storage.php', 'telegram.php', 'ai_sort.php',
-        'cron_reminder.php', 'world_news.php', 'news.php', 'dashboard.php',
-        'api.php', 'video_summary.php',
-    ];
+// Deploy kopiert ALLES, was im Repo liegt (auch neue Dateien automatisch,
+// keine Liste mehr zu pflegen). Ausgenommen ist nur, was ohnehin nie im
+// Repo landet: config.php und data/ existieren dort gar nicht — die
+// werden also implizit nie angerührt, unabhängig von dieser Liste.
+// Nicht-Code-Dateien (README etc.) werden übersprungen.
+function deploy_skip_file($filename) {
+    $skip = ['README.md', '.gitignore', 'LICENSE'];
+    return in_array($filename, $skip, true);
 }
 
 function run_deploy() {
@@ -44,17 +43,13 @@ function run_deploy() {
     $sourceDir = $subdirs[0] ?? $extractDir;
 
     $updated = [];
-    $skipped = [];
-    foreach (deploy_allowed_files() as $file) {
-        $src = $sourceDir . '/' . $file;
-        $dst = __DIR__ . '/' . $file;
-        if (file_exists($src)) {
-            copy($src, $dst);
-            $updated[] = $file;
-        } else {
-            $skipped[] = $file . " (nicht im Repo gefunden)";
-        }
+    foreach (glob($sourceDir . '/*') as $src) {
+        $filename = basename($src);
+        if (is_dir($src) || deploy_skip_file($filename)) continue;
+        copy($src, __DIR__ . '/' . $filename);
+        $updated[] = $filename;
     }
+    sort($updated);
 
     function deploy_rrmdir($dir) {
         foreach (glob($dir . '/*') as $f) { is_dir($f) ? deploy_rrmdir($f) : unlink($f); }
@@ -64,10 +59,6 @@ function run_deploy() {
 
     $out = "✅ " . count($updated) . " Datei(en) aktualisiert:\n";
     foreach ($updated as $f) $out .= "- {$f}\n";
-    if ($skipped) {
-        $out .= "\nÜbersprungen:\n";
-        foreach ($skipped as $f) $out .= "- {$f}\n";
-    }
-    $out .= "\nconfig.php und data/ wurden nicht angerührt.";
+    $out .= "\nconfig.php und data/ wurden nicht angerührt (existieren nicht im Repo).";
     return $out;
 }
