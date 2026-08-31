@@ -2,6 +2,7 @@
 <html lang="pl">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Wortgarten</title>
 <style>
@@ -35,6 +36,7 @@
     width:22vw; height:22vw; min-width:92px; min-height:92px; max-width:150px; max-height:150px;
     display:flex; align-items:center; justify-content:center;
     font-size:min(11vw, 64px);
+    font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
     box-shadow:0 6px 0 rgba(0,0,0,0.08), 0 10px 18px rgba(62,92,80,0.18);
     transition:transform .18s ease;
     cursor:pointer;
@@ -69,66 +71,69 @@
 <script>
 (function(){
 
+  // All emoji and Polish diacritics are written as \uXXXX escapes on purpose:
+  // this makes the file pure ASCII, so it displays correctly even if the
+  // server sends the wrong charset header and overrides the meta tag above.
   var OBJECTS = [
-    {id:'apple',    emoji:'🍎', c:'coral', pl:'jabłko'},
-    {id:'ball',     emoji:'⚽', c:'leaf',  pl:'piłka'},
-    {id:'dog',      emoji:'🐶', c:'sun',   pl:'pies'},
-    {id:'cat',      emoji:'🐱', c:'sky',   pl:'kot'},
-    {id:'car',      emoji:'🚗', c:'lilac', pl:'samochód'},
-    {id:'banana',   emoji:'🍌', c:'peach', pl:'banan'},
-    {id:'book',     emoji:'📖', c:'coral', pl:'książka'},
-    {id:'sun',      emoji:'☀️', c:'sun',   pl:'słońce'},
-    {id:'moon',     emoji:'🌙', c:'lilac', pl:'księżyc'},
-    {id:'star',     emoji:'⭐', c:'sky',   pl:'gwiazda'},
-    {id:'water',    emoji:'💧', c:'sky',   pl:'woda'},
-    {id:'milk',     emoji:'🥛', c:'leaf',  pl:'mleko'},
-    {id:'bread',    emoji:'🍞', c:'peach', pl:'chleb'},
-    {id:'egg',      emoji:'🥚', c:'sun',   pl:'jajko'},
-    {id:'fish',     emoji:'🐟', c:'sky',   pl:'ryba'},
-    {id:'bird',     emoji:'🐦', c:'leaf',  pl:'ptak'},
-    {id:'tree',     emoji:'🌳', c:'leaf',  pl:'drzewo'},
-    {id:'flower',   emoji:'🌸', c:'lilac', pl:'kwiat'},
-    {id:'shoe',     emoji:'👟', c:'coral', pl:'but'},
-    {id:'hat',      emoji:'🎩', c:'lilac', pl:'czapka'},
-    {id:'house',    emoji:'🏠', c:'peach', pl:'dom'},
-    {id:'chair',    emoji:'🪑', c:'sun',   pl:'krzesło'},
-    {id:'cow',      emoji:'🐄', c:'leaf',  pl:'krowa'},
-    {id:'spoon',    emoji:'🥄', c:'sky',   pl:'łyżka'},
-    {id:'cup',      emoji:'🥤', c:'coral', pl:'kubek'},
-    {id:'bear',     emoji:'🐻', c:'peach', pl:'miś'},
-    {id:'duck',     emoji:'🦆', c:'sun',   pl:'kaczka'},
-    {id:'butterfly',emoji:'🦋', c:'lilac', pl:'motyl'},
-    {id:'bicycle',  emoji:'🚲', c:'sky',   pl:'rower'},
-    {id:'balloon',  emoji:'🎈', c:'coral', pl:'balon'}
+    {id:"apple", c:"coral", emoji:"\uD83C\uDF4E", pl:"jab\u0142ko"},
+    {id:"ball", c:"leaf", emoji:"\u26BD", pl:"pi\u0142ka"},
+    {id:"dog", c:"sun", emoji:"\uD83D\uDC36", pl:"pies"},
+    {id:"cat", c:"sky", emoji:"\uD83D\uDC31", pl:"kot"},
+    {id:"car", c:"lilac", emoji:"\uD83D\uDE97", pl:"samoch\u00F3d"},
+    {id:"banana", c:"peach", emoji:"\uD83C\uDF4C", pl:"banan"},
+    {id:"book", c:"coral", emoji:"\uD83D\uDCD6", pl:"ksi\u0105\u017Cka"},
+    {id:"sun", c:"sun", emoji:"\u2600\uFE0F", pl:"s\u0142o\u0144ce"},
+    {id:"moon", c:"lilac", emoji:"\uD83C\uDF19", pl:"ksi\u0119\u017Cyc"},
+    {id:"star", c:"sky", emoji:"\u2B50", pl:"gwiazda"},
+    {id:"water", c:"sky", emoji:"\uD83D\uDCA7", pl:"woda"},
+    {id:"milk", c:"leaf", emoji:"\uD83E\uDD5B", pl:"mleko"},
+    {id:"bread", c:"peach", emoji:"\uD83C\uDF5E", pl:"chleb"},
+    {id:"egg", c:"sun", emoji:"\uD83E\uDD5A", pl:"jajko"},
+    {id:"fish", c:"sky", emoji:"\uD83D\uDC1F", pl:"ryba"},
+    {id:"bird", c:"leaf", emoji:"\uD83D\uDC26", pl:"ptak"},
+    {id:"tree", c:"leaf", emoji:"\uD83C\uDF33", pl:"drzewo"},
+    {id:"flower", c:"lilac", emoji:"\uD83C\uDF38", pl:"kwiat"},
+    {id:"shoe", c:"coral", emoji:"\uD83D\uDC5F", pl:"but"},
+    {id:"hat", c:"lilac", emoji:"\uD83C\uDFA9", pl:"czapka"},
+    {id:"house", c:"peach", emoji:"\uD83C\uDFE0", pl:"dom"},
+    {id:"chair", c:"sun", emoji:"\uD83E\uDE91", pl:"krzes\u0142o"},
+    {id:"cow", c:"leaf", emoji:"\uD83D\uDC04", pl:"krowa"},
+    {id:"spoon", c:"sky", emoji:"\uD83E\uDD44", pl:"\u0142y\u017Cka"},
+    {id:"cup", c:"coral", emoji:"\uD83E\uDD64", pl:"kubek"},
+    {id:"bear", c:"peach", emoji:"\uD83D\uDC3B", pl:"mi\u015B"},
+    {id:"duck", c:"sun", emoji:"\uD83E\uDD86", pl:"kaczka"},
+    {id:"butterfly", c:"lilac", emoji:"\uD83E\uDD8B", pl:"motyl"},
+    {id:"bicycle", c:"sky", emoji:"\uD83D\uDEB2", pl:"rower"},
+    {id:"balloon", c:"coral", emoji:"\uD83C\uDF88", pl:"balon"}
   ];
 
   var COLOR_MAP = {
-    coral:'var(--pebble-coral)', sun:'var(--pebble-sun)', leaf:'var(--pebble-leaf)',
-    sky:'var(--pebble-sky)', lilac:'var(--pebble-lilac)', peach:'var(--pebble-peach)'
+    coral:"var(--pebble-coral)", sun:"var(--pebble-sun)", leaf:"var(--pebble-leaf)",
+    sky:"var(--pebble-sky)", lilac:"var(--pebble-lilac)", peach:"var(--pebble-peach)"
   };
 
   // ---------- Voices ----------
   var voices = [];
   function refreshVoices(){ voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }
-  if('speechSynthesis' in window){
+  if("speechSynthesis" in window){
     refreshVoices();
     window.speechSynthesis.onvoiceschanged = refreshVoices;
   }
   function voiceFor(code){
     for(var i=0;i<voices.length;i++){ if(voices[i].lang === code) return voices[i]; }
-    for(var j=0;j<voices.length;j++){ if(voices[j].lang && voices[j].lang.indexOf('pl') === 0) return voices[j]; }
+    for(var j=0;j<voices.length;j++){ if(voices[j].lang && voices[j].lang.indexOf("pl") === 0) return voices[j]; }
     return null;
   }
 
   var lastUtterance = null; // kept alive so some browsers don't garbage-collect it mid-speech
 
   function speak(text){
-    if(!('speechSynthesis' in window)) return;
+    if(!("speechSynthesis" in window)) return;
     try{
       var u = new SpeechSynthesisUtterance(text);
       lastUtterance = u;
-      u.lang = 'pl-PL';
-      var v = voiceFor('pl-PL');
+      u.lang = "pl-PL";
+      var v = voiceFor("pl-PL");
       if(v) u.voice = v;
       u.rate = 0.85;
       u.pitch = 1.05;
@@ -138,18 +143,18 @@
   }
 
   // ---------- Build garden ----------
-  var garden = document.getElementById('garden');
+  var garden = document.getElementById("garden");
 
   OBJECTS.forEach(function(obj, idx){
-    var tile = document.createElement('div');
-    tile.className = 'tile shape-' + ['a','b','c'][idx % 3] + ' ' + (idx % 2 === 0 ? 'rot-l' : 'rot-r');
+    var tile = document.createElement("div");
+    tile.className = "tile shape-" + ["a","b","c"][idx % 3] + " " + (idx % 2 === 0 ? "rot-l" : "rot-r");
     tile.style.background = COLOR_MAP[obj.c];
     tile.textContent = obj.emoji;
-    tile.addEventListener('click', function(){
+    tile.addEventListener("click", function(){
       speak(obj.pl);
-      tile.classList.remove('bounce');
+      tile.classList.remove("bounce");
       void tile.offsetWidth; // restart animation
-      tile.classList.add('bounce');
+      tile.classList.add("bounce");
     });
     garden.appendChild(tile);
   });
