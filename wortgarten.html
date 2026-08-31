@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Wortgarten</title>
+<style>
+  :root{
+    --sky-top:#BFE3F0;
+    --sky-bottom:#EAF6E6;
+    --moss:#7BB889;
+    --moss-dark:#5E9A6C;
+    --pebble-coral:#FF9376;
+    --pebble-sun:#FFCB61;
+    --pebble-leaf:#8FD69A;
+    --pebble-sky:#6FC3E6;
+    --pebble-lilac:#C6A6E8;
+    --pebble-peach:#FFB199;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none;}
+  html,body{
+    margin:0; padding:0; width:100%; height:100%;
+    background:linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 62%, var(--moss) 62%, var(--moss-dark) 100%);
+    overflow:hidden; touch-action:manipulation;
+    font-family:-apple-system, sans-serif;
+  }
+  #sky-deco{position:fixed; inset:0; pointer-events:none; z-index:0;}
+  #garden{
+    position:fixed; inset:0; z-index:1;
+    display:flex; flex-wrap:wrap; align-content:flex-start; justify-content:center;
+    gap:3vw; padding:5vh 4vw 8vh 4vw;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .tile{
+    width:22vw; height:22vw; min-width:92px; min-height:92px; max-width:150px; max-height:150px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:min(11vw, 64px);
+    box-shadow:0 6px 0 rgba(0,0,0,0.08), 0 10px 18px rgba(62,92,80,0.18);
+    transition:transform .18s ease;
+    cursor:pointer;
+    border:none;
+  }
+  .tile:active{transform:scale(0.93);}
+  .tile.shape-a{border-radius:50%;}
+  .tile.shape-b{border-radius:58% 42% 53% 47% / 45% 55% 45% 55%;}
+  .tile.shape-c{border-radius:42% 58% 47% 53% / 55% 45% 55% 45%;}
+  .tile.rot-l{transform:rotate(-3deg);}
+  .tile.rot-r{transform:rotate(3deg);}
+  .tile.rot-l:active, .tile.rot-r:active{transform:scale(0.93) rotate(0deg);}
+
+  .tile.bounce{animation:pop 0.5s ease;}
+  @keyframes pop{
+    0%{transform:scale(1);}
+    35%{transform:scale(1.18);}
+    100%{transform:scale(1);}
+  }
+</style>
+</head>
+<body>
+
+<svg id="sky-deco" viewBox="0 0 400 800" preserveAspectRatio="xMidYMin slice">
+  <circle cx="330" cy="70" r="34" fill="#FFF6D6" opacity="0.9"/>
+  <ellipse cx="70" cy="60" rx="46" ry="20" fill="#ffffff" opacity="0.7"/>
+  <ellipse cx="110" cy="72" rx="34" ry="16" fill="#ffffff" opacity="0.6"/>
+</svg>
+
+<div id="garden"></div>
+
+<script>
+(function(){
+
+  var OBJECTS = [
+    {id:'apple',    emoji:'🍎', c:'coral', pl:'jabłko'},
+    {id:'ball',     emoji:'⚽', c:'leaf',  pl:'piłka'},
+    {id:'dog',      emoji:'🐶', c:'sun',   pl:'pies'},
+    {id:'cat',      emoji:'🐱', c:'sky',   pl:'kot'},
+    {id:'car',      emoji:'🚗', c:'lilac', pl:'samochód'},
+    {id:'banana',   emoji:'🍌', c:'peach', pl:'banan'},
+    {id:'book',     emoji:'📖', c:'coral', pl:'książka'},
+    {id:'sun',      emoji:'☀️', c:'sun',   pl:'słońce'},
+    {id:'moon',     emoji:'🌙', c:'lilac', pl:'księżyc'},
+    {id:'star',     emoji:'⭐', c:'sky',   pl:'gwiazda'},
+    {id:'water',    emoji:'💧', c:'sky',   pl:'woda'},
+    {id:'milk',     emoji:'🥛', c:'leaf',  pl:'mleko'},
+    {id:'bread',    emoji:'🍞', c:'peach', pl:'chleb'},
+    {id:'egg',      emoji:'🥚', c:'sun',   pl:'jajko'},
+    {id:'fish',     emoji:'🐟', c:'sky',   pl:'ryba'},
+    {id:'bird',     emoji:'🐦', c:'leaf',  pl:'ptak'},
+    {id:'tree',     emoji:'🌳', c:'leaf',  pl:'drzewo'},
+    {id:'flower',   emoji:'🌸', c:'lilac', pl:'kwiat'},
+    {id:'shoe',     emoji:'👟', c:'coral', pl:'but'},
+    {id:'hat',      emoji:'🎩', c:'lilac', pl:'czapka'},
+    {id:'house',    emoji:'🏠', c:'peach', pl:'dom'},
+    {id:'chair',    emoji:'🪑', c:'sun',   pl:'krzesło'},
+    {id:'cow',      emoji:'🐄', c:'leaf',  pl:'krowa'},
+    {id:'spoon',    emoji:'🥄', c:'sky',   pl:'łyżka'},
+    {id:'cup',      emoji:'🥤', c:'coral', pl:'kubek'},
+    {id:'bear',     emoji:'🐻', c:'peach', pl:'miś'},
+    {id:'duck',     emoji:'🦆', c:'sun',   pl:'kaczka'},
+    {id:'butterfly',emoji:'🦋', c:'lilac', pl:'motyl'},
+    {id:'bicycle',  emoji:'🚲', c:'sky',   pl:'rower'},
+    {id:'balloon',  emoji:'🎈', c:'coral', pl:'balon'}
+  ];
+
+  var COLOR_MAP = {
+    coral:'var(--pebble-coral)', sun:'var(--pebble-sun)', leaf:'var(--pebble-leaf)',
+    sky:'var(--pebble-sky)', lilac:'var(--pebble-lilac)', peach:'var(--pebble-peach)'
+  };
+
+  // ---------- Voices ----------
+  var voices = [];
+  function refreshVoices(){ voices = window.speechSynthesis ? window.speechSynthesis.getVoices() : []; }
+  if('speechSynthesis' in window){
+    refreshVoices();
+    window.speechSynthesis.onvoiceschanged = refreshVoices;
+  }
+  function voiceFor(code){
+    for(var i=0;i<voices.length;i++){ if(voices[i].lang === code) return voices[i]; }
+    for(var j=0;j<voices.length;j++){ if(voices[j].lang && voices[j].lang.indexOf('pl') === 0) return voices[j]; }
+    return null;
+  }
+
+  var lastUtterance = null; // kept alive so some browsers don't garbage-collect it mid-speech
+
+  function speak(text){
+    if(!('speechSynthesis' in window)) return;
+    try{
+      var u = new SpeechSynthesisUtterance(text);
+      lastUtterance = u;
+      u.lang = 'pl-PL';
+      var v = voiceFor('pl-PL');
+      if(v) u.voice = v;
+      u.rate = 0.85;
+      u.pitch = 1.05;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+
+  // ---------- Build garden ----------
+  var garden = document.getElementById('garden');
+
+  OBJECTS.forEach(function(obj, idx){
+    var tile = document.createElement('div');
+    tile.className = 'tile shape-' + ['a','b','c'][idx % 3] + ' ' + (idx % 2 === 0 ? 'rot-l' : 'rot-r');
+    tile.style.background = COLOR_MAP[obj.c];
+    tile.textContent = obj.emoji;
+    tile.addEventListener('click', function(){
+      speak(obj.pl);
+      tile.classList.remove('bounce');
+      void tile.offsetWidth; // restart animation
+      tile.classList.add('bounce');
+    });
+    garden.appendChild(tile);
+  });
+
+})();
+</script>
+</body>
+</html>
