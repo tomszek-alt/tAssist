@@ -98,6 +98,7 @@ if ($secret !== WEBHOOK_SECRET) {
     <div class="tab" data-tab="inbox">Inbox</div>
     <div class="tab" data-tab="news">📰 News</div>
     <div class="tab" data-tab="links">🔗 Links</div>
+    <div class="tab" data-tab="sharedlists">🔗📤 Geteilte Listen</div>
   </div>
   <div class="tabs" id="customTabs"></div>
   <div class="settings-row">
@@ -149,6 +150,14 @@ if ($secret !== WEBHOOK_SECRET) {
       <button class="btn" id="newLinkBtn">+ Hinzufügen</button>
     </div>
     <div id="linksBoard"></div>
+  </div>
+
+  <div class="panel" id="panel-sharedlists">
+    <div class="add-row" style="margin-bottom:14px;">
+      <input id="newSharedListTitle" placeholder="Name der neuen Liste (z.B. Packliste Urlaub)…"/>
+      <button class="btn" id="addSharedListBtn">+ Liste anlegen</button>
+    </div>
+    <div id="sharedListsBoard"></div>
   </div>
 </div>
 
@@ -485,7 +494,7 @@ function renderLinks() {
 }
 
 function renderAll() {
-  renderProjects(); renderInbox(); renderNews(); renderLinks(); renderCollections();
+  renderProjects(); renderInbox(); renderNews(); renderLinks(); renderCollections(); renderSharedLists();
   document.getElementById('statusLine').textContent =
     `${store.projects.length} Projekte · ${store.inbox.length} in Inbox · ${store.news.length} News · ${store.saved_links.length} Links`;
 }
@@ -578,6 +587,41 @@ document.getElementById('newLinkBtn').onclick = () => {
   if (input.value.trim()) { call('saved_link_add', { text: input.value.trim() }); input.value = ''; }
 };
 document.getElementById('newLinkInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('newLinkBtn').click(); });
+
+// ── Geteilte Listen ───────────────────────────────────
+function baseUrl() {
+  return location.origin + location.pathname.replace(/dashboard\.php$/, '');
+}
+function renderSharedLists() {
+  const board = document.getElementById('sharedListsBoard');
+  const lists = store.shared_lists || [];
+  board.innerHTML = lists.length ? '' : '<div class="empty">Noch keine geteilten Listen.</div>';
+  lists.forEach(l => {
+    const link = baseUrl() + 'shared.php?secret=' + l.secret;
+    const el = document.createElement('div');
+    el.className = 'item';
+    el.innerHTML = `
+      <div><b>${esc(l.title)}</b></div>
+      <div style="font-size:12px;color:var(--teal);word-break:break-all;margin-top:4px;">${link}</div>
+      <div class="actions">
+        <button class="btn small ghost" data-copylink="${esc(link)}">Link kopieren</button>
+        <a class="btn small ghost" href="${link}" target="_blank">Öffnen</a>
+        <button class="btn small danger" data-sldel="${l.id}">🗑 Liste löschen</button>
+      </div>
+    `;
+    board.appendChild(el);
+  });
+  board.querySelectorAll('[data-copylink]').forEach(b => {
+    b.onclick = () => { navigator.clipboard.writeText(b.dataset.copylink); b.textContent = 'Kopiert ✓'; setTimeout(() => b.textContent = 'Link kopieren', 1500); };
+  });
+  board.querySelectorAll('[data-sldel]').forEach(b => {
+    b.onclick = () => { if (confirm('Liste wirklich löschen? Der Link funktioniert danach nicht mehr.')) call('sharedlist_delete', { id: b.dataset.sldel }); };
+  });
+}
+document.getElementById('addSharedListBtn').onclick = () => {
+  const input = document.getElementById('newSharedListTitle');
+  if (input.value.trim()) { call('sharedlist_create', { title: input.value.trim() }); input.value = ''; }
+};
 
 call('get');
 

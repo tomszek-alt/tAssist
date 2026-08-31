@@ -26,7 +26,26 @@ function &find_project(&$store, $id) {
 
 switch ($action) {
     case 'get':
-        break; // nur zurückgeben
+        break;
+
+    case 'sharedlist_create':
+        require_once __DIR__ . '/shared_lists_storage.php';
+        $lists = shared_lists_load();
+        $lists[] = [
+            'id' => 'sl' . uniqid(),
+            'secret' => shared_lists_new_secret(),
+            'title' => trim($p['title'] ?? 'Neue Liste'),
+            'subtitle' => trim($p['subtitle'] ?? ''),
+            'categories' => [],
+        ];
+        shared_lists_save($lists);
+        break;
+
+    case 'sharedlist_delete':
+        require_once __DIR__ . '/shared_lists_storage.php';
+        $lists = array_values(array_filter(shared_lists_load(), fn($l) => $l['id'] !== ($p['id'] ?? '')));
+        shared_lists_save($lists);
+        break;
 
     case 'project_add':
         $store['projects'][] = [
@@ -275,4 +294,6 @@ switch ($action) {
 }
 
 save_data($store);
+require_once __DIR__ . '/shared_lists_storage.php';
+$store['shared_lists'] = shared_lists_load();
 echo json_encode(['ok' => true, 'data' => $store]);
