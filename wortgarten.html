@@ -38,31 +38,30 @@
     font-size:min(11vw, 64px);
     font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
     box-shadow:0 6px 0 rgba(0,0,0,0.08), 0 10px 18px rgba(62,92,80,0.18);
-    transition:transform .18s ease;
+    transition:transform .32s cubic-bezier(.34,1.56,.64,1), opacity .45s ease;
     cursor:pointer;
     border:none;
   }
-  .tile:active{transform:scale(0.93);}
   .tile.shape-a{border-radius:50%;}
   .tile.shape-b{border-radius:58% 42% 53% 47% / 45% 55% 45% 55%;}
   .tile.shape-c{border-radius:42% 58% 47% 53% / 55% 45% 55% 45%;}
-  .tile.rot-l{transform:rotate(-3deg);}
-  .tile.rot-r{transform:rotate(3deg);}
-  .tile.rot-l:active, .tile.rot-r:active{transform:scale(0.93) rotate(0deg);}
 
-  .tile.bounce{animation:pop 0.5s ease;}
-  @keyframes pop{
-    0%{transform:scale(1);}
-    35%{transform:scale(1.18);}
-    100%{transform:scale(1);}
+  .sparkle{
+    position:fixed; z-index:5; pointer-events:none; font-size:22px;
+    animation:rise 0.9s ease forwards;
   }
-  .tile.gone{
-    animation:fadeAway 0.5s ease forwards;
-    pointer-events:none;
+  @keyframes rise{
+    0%{opacity:1; transform:translateY(0) scale(0.6);}
+    100%{opacity:0; transform:translateY(-70px) scale(1.4);}
   }
-  @keyframes fadeAway{
-    0%{opacity:1; transform:scale(1);}
-    100%{opacity:0; transform:scale(0.3);}
+
+  .confetti{
+    position:fixed; top:-40px; z-index:9; pointer-events:none; font-size:28px;
+    animation:confettiFall linear forwards;
+  }
+  @keyframes confettiFall{
+    0%{transform:translateY(0) rotate(0deg); opacity:1;}
+    100%{transform:translateY(110vh) rotate(540deg); opacity:0.9;}
   }
 </style>
 </head>
@@ -85,8 +84,8 @@
   var OBJECTS = [
     {id:"apple", c:"coral", emoji:"\uD83C\uDF4E", pl:"jab\u0142ko"},
     {id:"ball", c:"leaf", emoji:"\u26BD", pl:"pi\u0142ka"},
-    {id:"dog", c:"sun", emoji:"\uD83D\uDC36", pl:"pies"},
-    {id:"cat", c:"sky", emoji:"\uD83D\uDC31", pl:"kot"},
+    {id:"dog", c:"sun", emoji:"\uD83D\uDC36", pl:"pies", sound:"Hau, hau!"},
+    {id:"cat", c:"sky", emoji:"\uD83D\uDC31", pl:"kot", sound:"Miau!"},
     {id:"car", c:"lilac", emoji:"\uD83D\uDE97", pl:"samoch\u00F3d"},
     {id:"banana", c:"peach", emoji:"\uD83C\uDF4C", pl:"banan"},
     {id:"book", c:"coral", emoji:"\uD83D\uDCD6", pl:"ksi\u0105\u017Cka"},
@@ -98,18 +97,18 @@
     {id:"bread", c:"peach", emoji:"\uD83C\uDF5E", pl:"chleb"},
     {id:"egg", c:"sun", emoji:"\uD83E\uDD5A", pl:"jajko"},
     {id:"fish", c:"sky", emoji:"\uD83D\uDC1F", pl:"ryba"},
-    {id:"bird", c:"leaf", emoji:"\uD83D\uDC26", pl:"ptak"},
+    {id:"bird", c:"leaf", emoji:"\uD83D\uDC26", pl:"ptak", sound:"\u0106wir, \u0107wir!"},
     {id:"tree", c:"leaf", emoji:"\uD83C\uDF33", pl:"drzewo"},
     {id:"flower", c:"lilac", emoji:"\uD83C\uDF38", pl:"kwiat"},
     {id:"shoe", c:"coral", emoji:"\uD83D\uDC5F", pl:"but"},
     {id:"hat", c:"lilac", emoji:"\uD83C\uDFA9", pl:"czapka"},
     {id:"house", c:"peach", emoji:"\uD83C\uDFE0", pl:"dom"},
     {id:"chair", c:"sun", emoji:"\uD83E\uDE91", pl:"krzes\u0142o"},
-    {id:"cow", c:"leaf", emoji:"\uD83D\uDC04", pl:"krowa"},
+    {id:"cow", c:"leaf", emoji:"\uD83D\uDC04", pl:"krowa", sound:"Muuu!"},
     {id:"spoon", c:"sky", emoji:"\uD83E\uDD44", pl:"\u0142y\u017Cka"},
     {id:"cup", c:"coral", emoji:"\uD83E\uDD64", pl:"kubek"},
-    {id:"bear", c:"peach", emoji:"\uD83D\uDC3B", pl:"mi\u015B"},
-    {id:"duck", c:"sun", emoji:"\uD83E\uDD86", pl:"kaczka"},
+    {id:"bear", c:"peach", emoji:"\uD83D\uDC3B", pl:"mi\u015B", sound:"Gr, gr!"},
+    {id:"duck", c:"sun", emoji:"\uD83E\uDD86", pl:"kaczka", sound:"Kwa, kwa!"},
     {id:"butterfly", c:"lilac", emoji:"\uD83E\uDD8B", pl:"motyl"},
     {id:"bicycle", c:"sky", emoji:"\uD83D\uDEB2", pl:"rower"},
     {id:"balloon", c:"coral", emoji:"\uD83C\uDF88", pl:"balon"}
@@ -119,6 +118,7 @@
     coral:"var(--pebble-coral)", sun:"var(--pebble-sun)", leaf:"var(--pebble-leaf)",
     sky:"var(--pebble-sky)", lilac:"var(--pebble-lilac)", peach:"var(--pebble-peach)"
   };
+  var CONFETTI_GLYPHS = ["\uD83C\uDF89","\u2728","\uD83C\uDF08","\u2B50","\uD83C\uDF3A","\uD83C\uDF88"];
 
   // ---------- Voices ----------
   var voices = [];
@@ -135,39 +135,124 @@
 
   var lastUtterance = null; // kept alive so some browsers don't garbage-collect it mid-speech
 
-  function speak(text){
-    if(!("speechSynthesis" in window)) return;
-    try{
-      var u = new SpeechSynthesisUtterance(text);
-      lastUtterance = u;
-      u.lang = "pl-PL";
-      var v = voiceFor("pl-PL");
-      if(v) u.voice = v;
-      u.rate = 0.85;
-      u.pitch = 1.05;
-      window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(u);
-    }catch(e){}
+  function speak(text, opts){
+    opts = opts || {};
+    return new Promise(function(resolve){
+      if(!("speechSynthesis" in window)){ resolve(); return; }
+      var done = false;
+      function finish(){ if(done) return; done = true; resolve(); }
+      try{
+        var u = new SpeechSynthesisUtterance(text);
+        lastUtterance = u;
+        u.lang = "pl-PL";
+        var v = voiceFor("pl-PL");
+        if(v) u.voice = v;
+        u.rate = opts.rate || 0.85;
+        u.pitch = opts.pitch || 1.05;
+        u.onend = finish;
+        u.onerror = finish;
+        window.speechSynthesis.speak(u);
+        var estMs = Math.max(900, text.length * 220);
+        setTimeout(finish, estMs);
+      }catch(e){
+        finish();
+      }
+    });
+  }
+
+  function sparkleAt(el){
+    var rect = el.getBoundingClientRect();
+    for(var i=0;i<3;i++){
+      var s = document.createElement("div");
+      s.className = "sparkle";
+      s.textContent = CONFETTI_GLYPHS[(i+1) % CONFETTI_GLYPHS.length];
+      s.style.left = (rect.left + rect.width/2 + (i-1)*18) + "px";
+      s.style.top = (rect.top + rect.height/2) + "px";
+      document.body.appendChild(s);
+      (function(node){ setTimeout(function(){ node.remove(); }, 950); })(s);
+    }
+  }
+
+  function celebrateFinale(callback){
+    var count = 26;
+    for(var i=0;i<count;i++){
+      (function(i){
+        var c = document.createElement("div");
+        c.className = "confetti";
+        c.textContent = CONFETTI_GLYPHS[i % CONFETTI_GLYPHS.length];
+        c.style.left = (Math.random()*94 + 2) + "vw";
+        var duration = 1.6 + Math.random()*1.2;
+        var delay = Math.random()*0.5;
+        c.style.animationDuration = duration + "s";
+        c.style.animationDelay = delay + "s";
+        c.style.fontSize = (20 + Math.random()*18) + "px";
+        document.body.appendChild(c);
+        setTimeout(function(){ c.remove(); }, (duration+delay)*1000 + 100);
+      })(i);
+    }
+    setTimeout(callback, 2200);
   }
 
   // ---------- Build garden ----------
   var garden = document.getElementById("garden");
+  var busy = false;
 
-  OBJECTS.forEach(function(obj, idx){
-    var tile = document.createElement("div");
-    tile.className = "tile shape-" + ["a","b","c"][idx % 3] + " " + (idx % 2 === 0 ? "rot-l" : "rot-r");
-    tile.style.background = COLOR_MAP[obj.c];
-    tile.textContent = obj.emoji;
-    tile.addEventListener("click", function(){
-      speak(obj.pl);
-      tile.classList.add("bounce");
-      setTimeout(function(){
-        tile.classList.add("gone");
-        setTimeout(function(){ tile.remove(); }, 500);
-      }, 200);
+  function buildGarden(){
+    garden.innerHTML = "";
+    OBJECTS.forEach(function(obj, idx){
+      var tile = document.createElement("div");
+      var baseRot = (idx % 2 === 0) ? -3 : 3;
+      tile.className = "tile shape-" + ["a","b","c"][idx % 3];
+      tile.style.background = COLOR_MAP[obj.c];
+      tile.style.transform = "rotate(" + baseRot + "deg) scale(1)";
+      tile.dataset.baseRot = baseRot;
+      tile.textContent = obj.emoji;
+      tile.addEventListener("click", function(){ handleTap(obj, tile); });
+      garden.appendChild(tile);
     });
-    garden.appendChild(tile);
-  });
+  }
+
+  function handleTap(obj, tile){
+    if(busy) return;
+    busy = true;
+    var watchdog = setTimeout(function(){ busy = false; }, 12000);
+    function release(){ clearTimeout(watchdog); busy = false; }
+
+    var baseRot = tile.dataset.baseRot;
+
+    // 1) grow
+    tile.style.transform = "rotate(" + baseRot + "deg) scale(1.32)";
+
+    Promise.resolve()
+      .then(function(){ return new Promise(function(r){ setTimeout(r, 320); }); })
+      // 2) speak the word while enlarged
+      .then(function(){ return speak(obj.pl); })
+      // 3) if it's an animal, play its sound word right after
+      .then(function(){
+        if(obj.sound){ return speak(obj.sound, {rate:1.05, pitch:1.25}); }
+      })
+      // 4) fancy disappear
+      .then(function(){
+        sparkleAt(tile);
+        tile.style.transition = "transform .55s cubic-bezier(.55,0,.55,1), opacity .55s ease";
+        tile.style.transform = "rotate(" + (Number(baseRot) + 360) + "deg) scale(0)";
+        tile.style.opacity = "0";
+        return new Promise(function(r){ setTimeout(r, 560); });
+      })
+      .then(function(){
+        tile.remove();
+        release();
+        if(garden.children.length === 0){
+          celebrateFinale(buildGarden);
+        }
+      })
+      .catch(function(err){
+        console.error("Wortgarten error:", err);
+        release();
+      });
+  }
+
+  buildGarden();
 
 })();
 </script>
