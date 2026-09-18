@@ -33,14 +33,24 @@
     overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   .tile{
-    width:22vw; height:22vw; min-width:92px; min-height:92px; max-width:150px; max-height:150px;
     display:flex; align-items:center; justify-content:center;
-    font-size:min(11vw, 64px);
     font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
     box-shadow:0 6px 0 rgba(0,0,0,0.08), 0 10px 18px rgba(62,92,80,0.18);
     transition:transform .32s cubic-bezier(.34,1.56,.64,1), opacity .45s ease;
     cursor:pointer;
     border:none;
+  }
+  .tile.size-s{
+    width:17vw; height:17vw; min-width:86px; min-height:86px; max-width:118px; max-height:118px;
+    font-size:min(9vw, 50px);
+  }
+  .tile.size-m{
+    width:22vw; height:22vw; min-width:100px; min-height:100px; max-width:150px; max-height:150px;
+    font-size:min(11vw, 64px);
+  }
+  .tile.size-l{
+    width:27vw; height:27vw; min-width:118px; min-height:118px; max-width:182px; max-height:182px;
+    font-size:min(13vw, 78px);
   }
   .tile.shape-a{border-radius:50%;}
   .tile.shape-b{border-radius:58% 42% 53% 47% / 45% 55% 45% 55%;}
@@ -197,12 +207,15 @@
   var garden = document.getElementById("garden");
   var busy = false;
 
+  var SIZE_WEIGHTS = ["s","m","m","m","l","l"]; // ~17% small, 50% medium, 33% large
+
   function buildGarden(){
     garden.innerHTML = "";
     OBJECTS.forEach(function(obj, idx){
       var tile = document.createElement("div");
       var baseRot = (idx % 2 === 0) ? -3 : 3;
-      tile.className = "tile shape-" + ["a","b","c"][idx % 3];
+      var size = SIZE_WEIGHTS[Math.floor(Math.random() * SIZE_WEIGHTS.length)];
+      tile.className = "tile shape-" + ["a","b","c"][idx % 3] + " size-" + size;
       tile.style.background = COLOR_MAP[obj.c];
       tile.style.transform = "rotate(" + baseRot + "deg) scale(1)";
       tile.dataset.baseRot = baseRot;
