@@ -118,8 +118,48 @@ if (isset($update['callback_query'])) {
     exit;
 }
 
-// ── Normale Nachricht ────────────────────────────────────────────
+require_once __DIR__ . '/image_ai.php';
+
+// ── Foto empfangen ────────────────────────────────────────────
 $msg = $update['message'] ?? null;
+if ($msg && !empty($msg['photo'])) {
+    $chatId = $msg['chat']['id'];
+    telegram_send("🖼️ Analysiere Bild…", $chatId);
+
+    // Größte verfügbare Auflösung nehmen (letztes Element im Array)
+    $photos = $msg['photo'];
+    $fileId = end($photos)['file_id'];
+
+    $download = telegram_download_photo($fileId);
+    if (!$download) {
+        telegram_send("❌ Konnte Bild nicht herunterladen.", $chatId);
+        exit;
+    }
+    [$bytes, $mediaType, $ext] = $download;
+
+    $imgId = 'img' . time() . rand(100, 999);
+    $imgDir = __DIR__ . '/../../../.configs/data/images/';
+    if (!is_dir($imgDir)) mkdir($imgDir, 0755, true);
+    file_put_contents($imgDir . $imgId . '.' . $ext, $bytes);
+
+    $base64 = base64_encode($bytes);
+    $description = claude_describe_image($base64, $mediaType);
+
+    $store = load_data();
+    $store['images'][] = ['id' => $imgId, 'ext' => $ext, 'description' => $description, 'created' => date('c')];
+    save_data($store);
+
+    telegram_send("🖼️ Gespeichert (auch in der Dashboard-Galerie).\n\n" . $description, $chatId);
+
+    // Beschriebenen Inhalt zusätzlich wie eine normale Notiz einordnen lassen
+    $store = add_inbox_item("[Bild] " . $description);
+    $newItem = end($store['inbox']);
+    $suggestion = claude_classify_inbox($description, $store['projects']);
+    send_assign_prompt($newItem, $chatId, $store['projects'], $suggestion);
+    exit;
+}
+
+// ── Normale Nachricht ────────────────────────────────────────────
 if (!$msg || !isset($msg['text'])) { exit; }
 $chatId = $msg['chat']['id'];
 $text = trim($msg['text']);

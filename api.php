@@ -224,6 +224,12 @@ switch ($action) {
         $store['saved_links'] = array_values(array_filter($store['saved_links'], fn($l) => $l['id'] !== ($p['id'] ?? '')));
         break;
 
+    case 'image_delete':
+        $imgId = $p['id'] ?? '';
+        foreach (glob(__DIR__ . '/../../../.configs/data/images/' . $imgId . '.*') as $f) { unlink($f); }
+        $store['images'] = array_values(array_filter($store['images'], fn($i) => $i['id'] !== $imgId));
+        break;
+
     case 'project_customfield_add':
         $proj = &find_project($store, $p['projectId'] ?? '');
         if ($proj && trim($p['key'] ?? '') !== '') {

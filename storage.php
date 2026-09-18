@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../../.configs/config.php';
 require_once __DIR__ . '/telegram.php';
 
 function empty_store() {
-    return ['projects' => [], 'inbox' => [], 'news' => [], 'saved_links' => [], 'collections' => []];
+    return ['projects' => [], 'inbox' => [], 'news' => [], 'saved_links' => [], 'collections' => [], 'images' => []];
 }
 
 function load_data() {
@@ -20,6 +20,7 @@ function load_data() {
     $data['news'] = $data['news'] ?? [];
     $data['saved_links'] = $data['saved_links'] ?? [];
     $data['collections'] = $data['collections'] ?? [];
+    $data['images'] = $data['images'] ?? [];
     return $data;
 }
 

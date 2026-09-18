@@ -99,6 +99,7 @@ if ($secret !== WEBHOOK_SECRET) {
     <div class="tab" data-tab="news">📰 News</div>
     <div class="tab" data-tab="links">🔗 Links</div>
     <div class="tab" data-tab="sharedlists">🔗📤 Geteilte Listen</div>
+    <div class="tab" data-tab="gallery">🖼️ Galerie</div>
   </div>
   <div class="tabs" id="customTabs"></div>
   <div class="settings-row">
@@ -158,6 +159,10 @@ if ($secret !== WEBHOOK_SECRET) {
       <button class="btn" id="addSharedListBtn">+ Liste anlegen</button>
     </div>
     <div id="sharedListsBoard"></div>
+  </div>
+
+  <div class="panel" id="panel-gallery">
+    <div id="galleryBoard" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;"></div>
   </div>
 </div>
 
@@ -494,7 +499,7 @@ function renderLinks() {
 }
 
 function renderAll() {
-  renderProjects(); renderInbox(); renderNews(); renderLinks(); renderCollections(); renderSharedLists();
+  renderProjects(); renderInbox(); renderNews(); renderLinks(); renderCollections(); renderSharedLists(); renderGallery();
   document.getElementById('statusLine').textContent =
     `${store.projects.length} Projekte · ${store.inbox.length} in Inbox · ${store.news.length} News · ${store.saved_links.length} Links`;
 }
@@ -622,6 +627,27 @@ document.getElementById('addSharedListBtn').onclick = () => {
   const input = document.getElementById('newSharedListTitle');
   if (input.value.trim()) { call('sharedlist_create', { title: input.value.trim() }); input.value = ''; }
 };
+
+// ── Galerie ───────────────────────────────────────────
+function renderGallery() {
+  const board = document.getElementById('galleryBoard');
+  const images = store.images || [];
+  board.innerHTML = images.length ? '' : '<div class="empty">Noch keine Bilder von Telegram empfangen.</div>';
+  [...images].reverse().forEach(img => {
+    const url = `image_serve.php?id=${img.id}&secret=${encodeURIComponent(SECRET)}`;
+    const el = document.createElement('div');
+    el.style.cssText = 'background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden;';
+    el.innerHTML = `
+      <a href="${url}" target="_blank"><img src="${url}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;"/></a>
+      <div style="padding:8px;font-size:11px;color:var(--muted);max-height:60px;overflow:auto;">${esc(img.description || '')}</div>
+      <div style="padding:0 8px 8px;"><button class="btn small danger" data-imgdel="${img.id}">🗑</button></div>
+    `;
+    board.appendChild(el);
+  });
+  board.querySelectorAll('[data-imgdel]').forEach(b => {
+    b.onclick = () => { if (confirm('Bild löschen?')) call('image_delete', { id: b.dataset.imgdel }); };
+  });
+}
 
 call('get');
 
