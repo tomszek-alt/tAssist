@@ -32,6 +32,10 @@
     gap:3vw; padding:5vh 4vw 8vh 4vw;
     overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
+  .tile-wrap{
+    display:inline-flex;
+    transition:transform .18s ease-out;
+  }
   .tile{
     display:flex; align-items:center; justify-content:center;
     font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
@@ -203,6 +207,51 @@
     setTimeout(callback, 2200);
   }
 
+  // ---------- Tilt drift: bubbles gently slide when the device is tilted ----------
+  var tiltX = 0, tiltY = 0;
+  var tiltRequested = false;
+  var orientBaseline = null;
+
+  function driftPxForSize(size){
+    if(size === "s") return 24;
+    if(size === "l") return 10;
+    return 16;
+  }
+
+  function applyDrift(){
+    var wraps = garden.children;
+    for(var i=0;i<wraps.length;i++){
+      var w = wraps[i];
+      var d = Number(w.dataset.drift || 0);
+      w.style.transform = "translate(" + (tiltX*d).toFixed(1) + "px," + (tiltY*d).toFixed(1) + "px)";
+    }
+  }
+
+  function onOrientation(e){
+    var gamma = e.gamma || 0;
+    var beta = e.beta || 0;
+    if(orientBaseline === null){ orientBaseline = {gamma:gamma, beta:beta}; return; }
+    var dG = gamma - orientBaseline.gamma;
+    var dB = beta - orientBaseline.beta;
+    tiltX = Math.max(-1, Math.min(1, dG/30));
+    tiltY = Math.max(-1, Math.min(1, dB/30));
+    applyDrift();
+  }
+
+  function enableTilt(){
+    if(tiltRequested) return;
+    tiltRequested = true;
+    try{
+      if(typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function"){
+        DeviceOrientationEvent.requestPermission().then(function(state){
+          if(state === "granted"){ window.addEventListener("deviceorientation", onOrientation); }
+        }).catch(function(){});
+      } else if("DeviceOrientationEvent" in window){
+        window.addEventListener("deviceorientation", onOrientation);
+      }
+    }catch(e){}
+  }
+
   // ---------- Build garden ----------
   var garden = document.getElementById("garden");
   var busy = false;
@@ -212,6 +261,9 @@
   function buildGarden(){
     garden.innerHTML = "";
     OBJECTS.forEach(function(obj, idx){
+      var wrap = document.createElement("div");
+      wrap.className = "tile-wrap";
+
       var tile = document.createElement("div");
       var baseRot = (idx % 2 === 0) ? -3 : 3;
       var size = SIZE_WEIGHTS[Math.floor(Math.random() * SIZE_WEIGHTS.length)];
@@ -220,12 +272,15 @@
       tile.style.transform = "rotate(" + baseRot + "deg) scale(1)";
       tile.dataset.baseRot = baseRot;
       tile.textContent = obj.emoji;
-      tile.addEventListener("click", function(){ handleTap(obj, tile); });
-      garden.appendChild(tile);
+
+      wrap.dataset.drift = driftPxForSize(size);
+      wrap.appendChild(tile);
+      wrap.addEventListener("click", function(){ enableTilt(); handleTap(obj, tile, wrap); });
+      garden.appendChild(wrap);
     });
   }
 
-  function handleTap(obj, tile){
+  function handleTap(obj, tile, wrap){
     if(busy) return;
     busy = true;
     var watchdog = setTimeout(function(){ busy = false; }, 12000);
@@ -253,7 +308,7 @@
         return new Promise(function(r){ setTimeout(r, 560); });
       })
       .then(function(){
-        tile.remove();
+        wrap.remove();
         release();
         if(garden.children.length === 0){
           celebrateFinale(buildGarden);
