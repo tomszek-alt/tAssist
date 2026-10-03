@@ -130,57 +130,64 @@
   // this makes the file pure ASCII, so it displays correctly even if the
   // server sends the wrong charset header and overrides the meta tag above.
 
-  var ALL_LANGS = ["pl","de","en"];
+  var ALL_LANGS = ["pl","de","en","tr"];
   var LANGS = ALL_LANGS.slice(); // set by the language picker
-  var LANG_CODE = {pl:"pl-PL", de:"de-DE", en:"en-US"};
+  var LANG_CODE = {pl:"pl-PL", de:"de-DE", en:"en-US", tr:"tr-TR"};
 
   var OBJECTS = [
-    {id:"apple", c:"coral", emoji:"\uD83C\uDF4E", pl:"jab\u0142ko", de:"Apfel", en:"apple"},
-    {id:"ball", c:"leaf", emoji:"\u26BD", pl:"pi\u0142ka", de:"Ball", en:"ball"},
-    {id:"dog", c:"sun", emoji:"\uD83D\uDC36", pl:"pies", de:"Hund", en:"dog",
-      sound:{pl:"Hau, hau!", de:"Wuff, wuff!", en:"Woof, woof!"}},
-    {id:"cat", c:"sky", emoji:"\uD83D\uDC31", pl:"kot", de:"Katze", en:"cat",
-      sound:{pl:"Miau!", de:"Miau!", en:"Meow!"}},
-    {id:"car", c:"lilac", emoji:"\uD83D\uDE97", pl:"samoch\u00F3d", de:"Auto", en:"car"},
-    {id:"banana", c:"peach", emoji:"\uD83C\uDF4C", pl:"banan", de:"Banane", en:"banana"},
-    {id:"book", c:"coral", emoji:"\uD83D\uDCD6", pl:"ksi\u0105\u017Cka", de:"Buch", en:"book"},
-    {id:"sun", c:"sun", emoji:"\u2600\uFE0F", pl:"s\u0142o\u0144ce", de:"Sonne", en:"sun"},
-    {id:"moon", c:"lilac", emoji:"\uD83C\uDF19", pl:"ksi\u0119\u017Cyc", de:"Mond", en:"moon"},
-    {id:"star", c:"sky", emoji:"\u2B50", pl:"gwiazda", de:"Stern", en:"star"},
-    {id:"water", c:"sky", emoji:"\uD83D\uDCA7", pl:"woda", de:"Wasser", en:"water"},
-    {id:"milk", c:"leaf", emoji:"\uD83E\uDD5B", pl:"mleko", de:"Milch", en:"milk"},
-    {id:"bread", c:"peach", emoji:"\uD83C\uDF5E", pl:"chleb", de:"Brot", en:"bread"},
-    {id:"egg", c:"sun", emoji:"\uD83E\uDD5A", pl:"jajko", de:"Ei", en:"egg"},
-    {id:"fish", c:"sky", emoji:"\uD83D\uDC1F", pl:"ryba", de:"Fisch", en:"fish"},
-    {id:"bird", c:"leaf", emoji:"\uD83D\uDC26", pl:"ptak", de:"Vogel", en:"bird",
-      sound:{pl:"\u0106wir, \u0107wir!", de:"Piep, piep!", en:"Tweet, tweet!"}},
-    {id:"tree", c:"leaf", emoji:"\uD83C\uDF33", pl:"drzewo", de:"Baum", en:"tree"},
-    {id:"flower", c:"lilac", emoji:"\uD83C\uDF38", pl:"kwiat", de:"Blume", en:"flower"},
-    {id:"shoe", c:"coral", emoji:"\uD83D\uDC5F", pl:"but", de:"Schuh", en:"shoe"},
-    {id:"hat", c:"lilac", emoji:"\uD83C\uDFA9", pl:"czapka", de:"Hut", en:"hat"},
-    {id:"house", c:"peach", emoji:"\uD83C\uDFE0", pl:"dom", de:"Haus", en:"house"},
-    {id:"chair", c:"sun", emoji:"\uD83E\uDE91", pl:"krzes\u0142o", de:"Stuhl", en:"chair"},
-    {id:"cow", c:"leaf", emoji:"\uD83D\uDC04", pl:"krowa", de:"Kuh", en:"cow",
-      sound:{pl:"Muuu!", de:"Muuu!", en:"Moo!"}},
-    {id:"spoon", c:"sky", emoji:"\uD83E\uDD44", pl:"\u0142y\u017Cka", de:"L\u00F6ffel", en:"spoon"},
-    {id:"cup", c:"coral", emoji:"\uD83E\uDD64", pl:"kubek", de:"Tasse", en:"cup"},
-    {id:"bear", c:"peach", emoji:"\uD83D\uDC3B", pl:"mi\u015B", de:"B\u00E4r", en:"bear",
-      sound:{pl:"Gr, gr!", de:"Grrr!", en:"Grrr!"}},
-    {id:"duck", c:"sun", emoji:"\uD83E\uDD86", pl:"kaczka", de:"Ente", en:"duck",
-      sound:{pl:"Kwa, kwa!", de:"Quak, quak!", en:"Quack, quack!"}},
-    {id:"butterfly", c:"lilac", emoji:"\uD83E\uDD8B", pl:"motyl", de:"Schmetterling", en:"butterfly"},
-    {id:"bicycle", c:"sky", emoji:"\uD83D\uDEB2", pl:"rower", de:"Fahrrad", en:"bicycle"},
-    {id:"balloon", c:"coral", emoji:"\uD83C\uDF88", pl:"balon", de:"Luftballon", en:"balloon"}
+    {id:"apple", c:"coral", emoji:"\uD83C\uDF4E", pl:"jab\u0142ko", de:"Apfel", en:"apple", tr:"elma"},
+    {id:"ball", c:"leaf", emoji:"\u26BD", pl:"pi\u0142ka", de:"Ball", en:"ball", tr:"top"},
+    {id:"dog", c:"sun", emoji:"\uD83D\uDC36", pl:"pies", de:"Hund", en:"dog", tr:"k\u00F6pek",
+      sound:{pl:"Hau, hau!", de:"Wuff, wuff!", en:"Woof, woof!", tr:"Hav, hav!"}},
+    {id:"cat", c:"sky", emoji:"\uD83D\uDC31", pl:"kot", de:"Katze", en:"cat", tr:"kedi",
+      sound:{pl:"Miau!", de:"Miau!", en:"Meow!", tr:"Miyav!"}},
+    {id:"car", c:"lilac", emoji:"\uD83D\uDE97", pl:"samoch\u00F3d", de:"Auto", en:"car", tr:"araba"},
+    {id:"banana", c:"peach", emoji:"\uD83C\uDF4C", pl:"banan", de:"Banane", en:"banana", tr:"muz"},
+    {id:"book", c:"coral", emoji:"\uD83D\uDCD6", pl:"ksi\u0105\u017Cka", de:"Buch", en:"book", tr:"kitap"},
+    {id:"sun", c:"sun", emoji:"\u2600\uFE0F", pl:"s\u0142o\u0144ce", de:"Sonne", en:"sun", tr:"g\u00FCne\u015F"},
+    {id:"moon", c:"lilac", emoji:"\uD83C\uDF19", pl:"ksi\u0119\u017Cyc", de:"Mond", en:"moon", tr:"ay"},
+    {id:"star", c:"sky", emoji:"\u2B50", pl:"gwiazda", de:"Stern", en:"star", tr:"y\u0131ld\u0131z"},
+    {id:"water", c:"sky", emoji:"\uD83D\uDCA7", pl:"woda", de:"Wasser", en:"water", tr:"su"},
+    {id:"milk", c:"leaf", emoji:"\uD83E\uDD5B", pl:"mleko", de:"Milch", en:"milk", tr:"s\u00FCt"},
+    {id:"bread", c:"peach", emoji:"\uD83C\uDF5E", pl:"chleb", de:"Brot", en:"bread", tr:"ekmek"},
+    {id:"egg", c:"sun", emoji:"\uD83E\uDD5A", pl:"jajko", de:"Ei", en:"egg", tr:"yumurta"},
+    {id:"fish", c:"sky", emoji:"\uD83D\uDC1F", pl:"ryba", de:"Fisch", en:"fish", tr:"bal\u0131k"},
+    {id:"bird", c:"leaf", emoji:"\uD83D\uDC26", pl:"ptak", de:"Vogel", en:"bird", tr:"ku\u015F",
+      sound:{pl:"\u0106wir, \u0107wir!", de:"Piep, piep!", en:"Tweet, tweet!", tr:"Cik, cik!"}},
+    {id:"tree", c:"leaf", emoji:"\uD83C\uDF33", pl:"drzewo", de:"Baum", en:"tree", tr:"a\u011Fa\u00E7"},
+    {id:"flower", c:"lilac", emoji:"\uD83C\uDF38", pl:"kwiat", de:"Blume", en:"flower", tr:"\u00E7i\u00E7ek"},
+    {id:"shoe", c:"coral", emoji:"\uD83D\uDC5F", pl:"but", de:"Schuh", en:"shoe", tr:"ayakkab\u0131"},
+    {id:"hat", c:"lilac", emoji:"\uD83C\uDFA9", pl:"czapka", de:"Hut", en:"hat", tr:"\u015Fapka"},
+    {id:"house", c:"peach", emoji:"\uD83C\uDFE0", pl:"dom", de:"Haus", en:"house", tr:"ev"},
+    {id:"chair", c:"sun", emoji:"\uD83E\uDE91", pl:"krzes\u0142o", de:"Stuhl", en:"chair", tr:"sandalye"},
+    {id:"cow", c:"leaf", emoji:"\uD83D\uDC04", pl:"krowa", de:"Kuh", en:"cow", tr:"inek",
+      sound:{pl:"Muuu!", de:"Muuu!", en:"Moo!", tr:"M\u00F6\u00F6!"}},
+    {id:"spoon", c:"sky", emoji:"\uD83E\uDD44", pl:"\u0142y\u017Cka", de:"L\u00F6ffel", en:"spoon", tr:"ka\u015F\u0131k"},
+    {id:"cup", c:"coral", emoji:"\uD83E\uDD64", pl:"kubek", de:"Tasse", en:"cup", tr:"bardak"},
+    {id:"bear", c:"peach", emoji:"\uD83D\uDC3B", pl:"mi\u015B", de:"B\u00E4r", en:"bear", tr:"ay\u0131",
+      sound:{pl:"Gr, gr!", de:"Grrr!", en:"Grrr!", tr:"Grrr!"}},
+    {id:"duck", c:"sun", emoji:"\uD83E\uDD86", pl:"kaczka", de:"Ente", en:"duck", tr:"\u00F6rdek",
+      sound:{pl:"Kwa, kwa!", de:"Quak, quak!", en:"Quack, quack!", tr:"Vak, vak!"}},
+    {id:"butterfly", c:"lilac", emoji:"\uD83E\uDD8B", pl:"motyl", de:"Schmetterling", en:"butterfly", tr:"kelebek"},
+    {id:"bicycle", c:"sky", emoji:"\uD83D\uDEB2", pl:"rower", de:"Fahrrad", en:"bicycle", tr:"bisiklet"},
+    {id:"balloon", c:"coral", emoji:"\uD83C\uDF88", pl:"balon", de:"Luftballon", en:"balloon", tr:"balon"},
+    {id:"lobster", c:"coral", emoji:"\uD83E\uDD9E", pl:"homar", de:"Hummer", en:"lobster", tr:"\u0131stakoz"},
+    {id:"wheat", c:"sun", emoji:"\uD83C\uDF3E", pl:"pszenica", de:"Weizen", en:"wheat", tr:"bu\u011Fday"},
+    {id:"peanut", c:"peach", emoji:"\uD83E\uDD5C", pl:"orzeszek", de:"Erdnuss", en:"peanut", tr:"yer f\u0131st\u0131\u011F\u0131"},
+    {id:"nut", c:"lilac", emoji:"\uD83C\uDF30", pl:"orzech", de:"Nuss", en:"nut", tr:"f\u0131nd\u0131k"},
+    {id:"shell", c:"sky", emoji:"\uD83D\uDC1A", pl:"muszla", de:"Muschel", en:"shell", tr:"deniz kabu\u011Fu"},
+    {id:"corn", c:"sun", emoji:"\uD83C\uDF3D", pl:"kukurydza", de:"Mais", en:"corn", tr:"m\u0131s\u0131r"},
+    {id:"mushroom", c:"leaf", emoji:"\uD83C\uDF44", pl:"grzyb", de:"Pilz", en:"mushroom", tr:"mantar"}
   ];
 
   var LETTER_COLORS = ["coral","sun","leaf","sky","lilac","peach"];
   var LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").map(function(ch, i){
-    return {id:"L"+ch, c:LETTER_COLORS[i % LETTER_COLORS.length], glyph:ch, pl:ch, de:ch, en:ch};
+    return {id:"L"+ch, c:LETTER_COLORS[i % LETTER_COLORS.length], glyph:ch, pl:ch, de:ch, en:ch, tr:ch};
   });
 
   var NUMBERS = [];
   for(var n=1; n<=20; n++){
-    NUMBERS.push({id:"N"+n, c:LETTER_COLORS[(n-1) % LETTER_COLORS.length], glyph:String(n), pl:String(n), de:String(n), en:String(n)});
+    NUMBERS.push({id:"N"+n, c:LETTER_COLORS[(n-1) % LETTER_COLORS.length], glyph:String(n), pl:String(n), de:String(n), en:String(n), tr:String(n)});
   }
 
   var MODES = {
@@ -347,7 +354,8 @@
       {langs:["pl"], c:"coral", shape:"a", content:"\uD83C\uDDF5\uD83C\uDDF1", say:"Polski", code:"pl-PL"},
       {langs:["de"], c:"sun", shape:"b", content:"\uD83C\uDDE9\uD83C\uDDEA", say:"Deutsch", code:"de-DE"},
       {langs:["en"], c:"sky", shape:"c", content:"\uD83C\uDDEC\uD83C\uDDE7", say:"English", code:"en-US"},
-      {langs:["pl","de","en"], c:"leaf", shape:"a", content:"\uD83C\uDF0D", say:null, code:null}
+      {langs:["tr"], c:"peach", shape:"b", content:"\uD83C\uDDF9\uD83C\uDDF7", say:"T\u00FCrk\u00E7e", code:"tr-TR"},
+      {langs:["pl","de","en","tr"], c:"leaf", shape:"a", content:"\uD83C\uDF0D", say:null, code:null}
     ];
     defs.forEach(function(d){
       var tile = document.createElement("div");
