@@ -28,7 +28,7 @@
   }
   #sky-deco{position:fixed; inset:0; pointer-events:none; z-index:0;}
 
-  #mode-select, #garden{
+  #lang-select, #mode-select, #garden{
     position:fixed; inset:0; z-index:1;
     display:flex; flex-wrap:wrap; align-content:center; justify-content:center;
     gap:5vw; padding:5vh 5vw;
@@ -72,7 +72,7 @@
   .tile.shape-b{border-radius:58% 42% 53% 47% / 45% 55% 45% 55%;}
   .tile.shape-c{border-radius:42% 58% 47% 53% / 55% 45% 55% 45%;}
 
-  #mode-select .tile{
+  #lang-select .tile, #mode-select .tile{
     width:26vw; height:26vw; min-width:118px; min-height:118px; max-width:190px; max-height:190px;
     font-size:min(13vw, 72px);
   }
@@ -112,6 +112,7 @@
   <ellipse cx="110" cy="72" rx="34" ry="16" fill="#ffffff" opacity="0.6"/>
 </svg>
 
+<div id="lang-select"></div>
 <div id="mode-select"></div>
 <div id="garden"></div>
 
@@ -129,7 +130,8 @@
   // this makes the file pure ASCII, so it displays correctly even if the
   // server sends the wrong charset header and overrides the meta tag above.
 
-  var LANGS = ["pl","de","en"];
+  var ALL_LANGS = ["pl","de","en"];
+  var LANGS = ALL_LANGS.slice(); // set by the language picker
   var LANG_CODE = {pl:"pl-PL", de:"de-DE", en:"en-US"};
 
   var OBJECTS = [
@@ -313,6 +315,7 @@
   }
 
   // ---------- Mode select / garden plumbing ----------
+  var langSelectEl = document.getElementById("lang-select");
   var modeSelectEl = document.getElementById("mode-select");
   var garden = document.getElementById("garden");
   var homeBtn = document.getElementById("home-btn");
@@ -322,11 +325,46 @@
 
   var SIZE_WEIGHTS = ["s","m","m","m","l","l"]; // ~17% small, 50% medium, 33% large
 
+  function showLangSelect(){
+    currentModeKey = null;
+    garden.style.display = "none";
+    modeSelectEl.style.display = "none";
+    homeBtn.style.display = "none";
+    langSelectEl.style.display = "flex";
+  }
+
   function showModeSelect(){
     currentModeKey = null;
     garden.style.display = "none";
-    homeBtn.style.display = "none";
+    langSelectEl.style.display = "none";
+    homeBtn.style.display = "flex";
     modeSelectEl.style.display = "flex";
+  }
+
+  function buildLangSelect(){
+    langSelectEl.innerHTML = "";
+    var defs = [
+      {langs:["pl"], c:"coral", shape:"a", content:"\uD83C\uDDF5\uD83C\uDDF1", say:"Polski", code:"pl-PL"},
+      {langs:["de"], c:"sun", shape:"b", content:"\uD83C\uDDE9\uD83C\uDDEA", say:"Deutsch", code:"de-DE"},
+      {langs:["en"], c:"sky", shape:"c", content:"\uD83C\uDDEC\uD83C\uDDE7", say:"English", code:"en-US"},
+      {langs:["pl","de","en"], c:"leaf", shape:"a", content:"\uD83C\uDF0D", say:null, code:null}
+    ];
+    defs.forEach(function(d){
+      var tile = document.createElement("div");
+      tile.className = "tile shape-" + d.shape;
+      tile.style.background = COLOR_MAP[d.c];
+      tile.textContent = d.content;
+      tile.addEventListener("click", function(){
+        LANGS = d.langs.slice();
+        tile.style.transform = "scale(1.15)";
+        var p = d.say ? speak(d.say, d.code) : Promise.resolve();
+        p.then(function(){
+          tile.style.transform = "";
+          showModeSelect();
+        });
+      });
+      langSelectEl.appendChild(tile);
+    });
   }
 
   function showGarden(modeKey){
@@ -423,10 +461,13 @@
       });
   }
 
-  homeBtn.addEventListener("click", showModeSelect);
+  homeBtn.addEventListener("click", function(){
+    if(currentModeKey){ showModeSelect(); } else { showLangSelect(); }
+  });
 
+  buildLangSelect();
   buildModeSelect();
-  showModeSelect();
+  showLangSelect();
 
 })();
 </script>
