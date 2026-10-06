@@ -190,10 +190,34 @@
     NUMBERS.push({id:"N"+n, c:LETTER_COLORS[(n-1) % LETTER_COLORS.length], glyph:String(n), pl:String(n), de:String(n), en:String(n), tr:String(n)});
   }
 
+  var FLAGS = [
+    {id:"FPL", c:"coral", emoji:"\uD83C\uDDF5\uD83C\uDDF1", pl:"Polska", de:"Polen", en:"Poland", tr:"Polonya"},
+    {id:"FDE", c:"sun", emoji:"\uD83C\uDDE9\uD83C\uDDEA", pl:"Niemcy", de:"Deutschland", en:"Germany", tr:"Almanya"},
+    {id:"FGB", c:"leaf", emoji:"\uD83C\uDDEC\uD83C\uDDE7", pl:"Wielka Brytania", de:"Gro\u00DFbritannien", en:"United Kingdom", tr:"Birle\u015Fik Krall\u0131k"},
+    {id:"FTR", c:"sky", emoji:"\uD83C\uDDF9\uD83C\uDDF7", pl:"Turcja", de:"T\u00FCrkei", en:"Turkey", tr:"T\u00FCrkiye"},
+    {id:"FFR", c:"lilac", emoji:"\uD83C\uDDEB\uD83C\uDDF7", pl:"Francja", de:"Frankreich", en:"France", tr:"Fransa"},
+    {id:"FIT", c:"peach", emoji:"\uD83C\uDDEE\uD83C\uDDF9", pl:"W\u0142ochy", de:"Italien", en:"Italy", tr:"\u0130talya"},
+    {id:"FES", c:"coral", emoji:"\uD83C\uDDEA\uD83C\uDDF8", pl:"Hiszpania", de:"Spanien", en:"Spain", tr:"\u0130spanya"},
+    {id:"FUS", c:"sun", emoji:"\uD83C\uDDFA\uD83C\uDDF8", pl:"Stany Zjednoczone", de:"Amerika", en:"United States", tr:"Amerika"},
+    {id:"FJP", c:"leaf", emoji:"\uD83C\uDDEF\uD83C\uDDF5", pl:"Japonia", de:"Japan", en:"Japan", tr:"Japonya"},
+    {id:"FCN", c:"sky", emoji:"\uD83C\uDDE8\uD83C\uDDF3", pl:"Chiny", de:"China", en:"China", tr:"\u00C7in"},
+    {id:"FBR", c:"lilac", emoji:"\uD83C\uDDE7\uD83C\uDDF7", pl:"Brazylia", de:"Brasilien", en:"Brazil", tr:"Brezilya"},
+    {id:"FCA", c:"peach", emoji:"\uD83C\uDDE8\uD83C\uDDE6", pl:"Kanada", de:"Kanada", en:"Canada", tr:"Kanada"},
+    {id:"FGR", c:"coral", emoji:"\uD83C\uDDEC\uD83C\uDDF7", pl:"Grecja", de:"Griechenland", en:"Greece", tr:"Yunanistan"},
+    {id:"FNL", c:"sun", emoji:"\uD83C\uDDF3\uD83C\uDDF1", pl:"Holandia", de:"Niederlande", en:"Netherlands", tr:"Hollanda"},
+    {id:"FSE", c:"leaf", emoji:"\uD83C\uDDF8\uD83C\uDDEA", pl:"Szwecja", de:"Schweden", en:"Sweden", tr:"\u0130sve\u00E7"},
+    {id:"FUA", c:"sky", emoji:"\uD83C\uDDFA\uD83C\uDDE6", pl:"Ukraina", de:"Ukraine", en:"Ukraine", tr:"Ukrayna"},
+    {id:"FAT", c:"lilac", emoji:"\uD83C\uDDE6\uD83C\uDDF9", pl:"Austria", de:"\u00D6sterreich", en:"Austria", tr:"Avusturya"},
+    {id:"FCH", c:"peach", emoji:"\uD83C\uDDE8\uD83C\uDDED", pl:"Szwajcaria", de:"Schweiz", en:"Switzerland", tr:"\u0130svi\u00E7re"},
+    {id:"FMX", c:"coral", emoji:"\uD83C\uDDF2\uD83C\uDDFD", pl:"Meksyk", de:"Mexiko", en:"Mexico", tr:"Meksika"},
+    {id:"FIN", c:"sun", emoji:"\uD83C\uDDEE\uD83C\uDDF3", pl:"Indie", de:"Indien", en:"India", tr:"Hindistan"}
+  ];
+
   var MODES = {
     objects: {items:OBJECTS, isGlyph:false},
     letters: {items:LETTERS, isGlyph:true},
-    numbers: {items:NUMBERS, isGlyph:true}
+    numbers: {items:NUMBERS, isGlyph:true},
+    flags: {items:FLAGS, isGlyph:false}
   };
 
   var COLOR_MAP = {
@@ -389,7 +413,8 @@
     var defs = [
       {mode:"objects", c:"coral", shape:"a", content:"\uD83C\uDF4E", glyph:false},
       {mode:"letters", c:"sky", shape:"b", content:"Aa", glyph:true},
-      {mode:"numbers", c:"leaf", shape:"c", content:"123", glyph:true}
+      {mode:"numbers", c:"leaf", shape:"c", content:"123", glyph:true},
+      {mode:"flags", c:"peach", shape:"a", content:"\uD83D\uDEA9", glyph:false}
     ];
     defs.forEach(function(d){
       var tile = document.createElement("div");
