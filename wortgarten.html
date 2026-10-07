@@ -95,6 +95,28 @@
     100%{transform:translateY(110vh) rotate(540deg); opacity:0.9;}
   }
 
+  #party{
+    position:fixed; inset:0; z-index:7; display:none; overflow:hidden; touch-action:none;
+    background:linear-gradient(180deg, #27325F 0%, #4B4A86 55%, #7A63A8 100%);
+    opacity:0; transition:opacity .6s ease;
+  }
+  #party.on{opacity:1;}
+  #fx{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
+  .balloon{
+    position:absolute; left:0; top:0;
+    border-radius:50% 50% 48% 48% / 56% 56% 44% 44%;
+    box-shadow:inset -10px -12px 0 rgba(0,0,0,0.10);
+    will-change:transform;
+  }
+  .balloon::before{
+    content:""; position:absolute; left:22%; top:15%; width:18%; height:24%;
+    border-radius:50%; background:rgba(255,255,255,0.55);
+  }
+  .balloon::after{
+    content:""; position:absolute; left:50%; top:100%; width:2px; height:56px;
+    background:rgba(255,255,255,0.45); transform:translateX(-50%);
+  }
+
   #home-btn{
     position:fixed; z-index:8; left:14px; bottom:14px;
     width:38px; height:38px; border-radius:50%;
@@ -115,6 +137,8 @@
 <div id="lang-select"></div>
 <div id="mode-select"></div>
 <div id="garden"></div>
+
+<div id="party"><canvas id="fx"></canvas></div>
 
 <div id="home-btn">
   <svg viewBox="0 0 24 24" fill="none" stroke="#3E5C50" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -300,6 +324,235 @@
     setTimeout(callback, 2200);
   }
 
+
+  // ---------- Sound effects (Web Audio, no files needed) ----------
+  var actx = null, noiseBuf = null;
+  function audio(){
+    try{
+      if(!actx){
+        var AC = window.AudioContext || window.webkitAudioContext;
+        if(AC) actx = new AC();
+      }
+      if(actx && actx.state === "suspended") actx.resume();
+    }catch(e){}
+    return actx;
+  }
+  function plop(){
+    var a = audio(); if(!a) return;
+    var t = a.currentTime;
+    var o = a.createOscillator(), g = a.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(720, t);
+    o.frequency.exponentialRampToValueAtTime(140, t + 0.12);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.35, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    o.connect(g); g.connect(a.destination);
+    o.start(t); o.stop(t + 0.18);
+  }
+  function boom(){
+    var a = audio(); if(!a) return;
+    if(!noiseBuf){
+      noiseBuf = a.createBuffer(1, Math.floor(a.sampleRate * 0.9), a.sampleRate);
+      var d = noiseBuf.getChannelData(0);
+      for(var i=0;i<d.length;i++) d[i] = Math.random()*2 - 1;
+    }
+    var t = a.currentTime;
+    var src = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain();
+    src.buffer = noiseBuf;
+    f.type = "lowpass";
+    f.frequency.setValueAtTime(900, t);
+    f.frequency.exponentialRampToValueAtTime(160, t + 0.7);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.16, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.85);
+    src.connect(f); f.connect(g); g.connect(a.destination);
+    src.start(t); src.stop(t + 0.9);
+  }
+
+  // ---------- Mini game: pop the balloons, fireworks in the sky ----------
+  var partyEl = document.getElementById("party");
+  var fx = document.getElementById("fx");
+  var fxCtx = fx.getContext("2d");
+  var partyOn = false, partyEnding = false, partyDone = null;
+  var balloons = [], particles = [], rockets = [];
+  var lastT = 0, partyStart = 0, spawnB = 0, spawnR = 0, pops = 0;
+
+  var BALLOON_COLORS = ["#FF9376","#FFCB61","#8FD69A","#6FC3E6","#C6A6E8","#FFB199","#FF7AA8"];
+  var FW_COLORS = ["#FFD166","#FF6B9A","#7BDFF2","#B2F7EF","#F7A072","#C3A3FF","#9BF6A0","#FFFFFF"];
+
+  function resizeFx(){
+    var dpr = Math.min(window.devicePixelRatio || 1, 2);
+    fx.width = Math.round(window.innerWidth * dpr);
+    fx.height = Math.round(window.innerHeight * dpr);
+    fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener("resize", function(){ if(partyOn) resizeFx(); });
+
+  function burst(x, y, colors, n, speed, life){
+    for(var i=0;i<n;i++){
+      var ang = Math.random() * Math.PI * 2;
+      var sp = speed * (0.35 + Math.random() * 0.65);
+      particles.push({
+        x:x, y:y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp,
+        life:life, max:life, size:2.5 + Math.random()*3,
+        color:colors[Math.floor(Math.random()*colors.length)]
+      });
+    }
+  }
+
+  function spawnBalloon(){
+    var w = 74 + Math.random() * 34, h = w * 1.22;
+    var b = {
+      el:document.createElement("div"),
+      x:10 + Math.random() * Math.max(10, window.innerWidth - w - 20),
+      y:window.innerHeight + 30,
+      vy:65 + Math.random() * 55,
+      amp:10 + Math.random() * 22, sw:0.9 + Math.random() * 1.1, phase:Math.random() * 6,
+      w:w, h:h, curX:0,
+      color:BALLOON_COLORS[Math.floor(Math.random() * BALLOON_COLORS.length)],
+      popped:false
+    };
+    b.el.className = "balloon";
+    b.el.style.width = w + "px";
+    b.el.style.height = h + "px";
+    b.el.style.background = b.color;
+    function hit(e){ if(e && e.preventDefault) e.preventDefault(); popBalloon(b); }
+    b.el.addEventListener("touchstart", hit, {passive:false});
+    b.el.addEventListener("mousedown", hit);
+    partyEl.appendChild(b.el);
+    balloons.push(b);
+  }
+
+  function popBalloon(b){
+    if(b.popped || !partyOn) return;
+    b.popped = true;
+    pops++;
+    burst(b.curX + b.w/2, b.y + b.h/2, [b.color, "#FFFFFF"], 26, 190, 0.8);
+    plop();
+    b.el.remove();
+    // count the pops out loud in the chosen language
+    try{
+      var lang = LANGS[roundLangIndex % LANGS.length];
+      if("speechSynthesis" in window) window.speechSynthesis.cancel();
+      speak(String(pops), LANG_CODE[lang], {rate:1.0, pitch:1.2});
+    }catch(e){}
+  }
+
+  function launchRocket(){
+    rockets.push({
+      x:window.innerWidth * (0.12 + Math.random() * 0.76),
+      y:window.innerHeight + 10,
+      ty:window.innerHeight * (0.12 + Math.random() * 0.32),
+      vy:-(430 + Math.random() * 140),
+      color:FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)]
+    });
+  }
+
+  function explode(r){
+    var c2 = FW_COLORS[Math.floor(Math.random() * FW_COLORS.length)];
+    burst(r.x, r.y, [r.color, c2], 55, 240, 1.4);
+    boom();
+  }
+
+  function partyLoop(t){
+    if(!partyOn) return;
+    var dt = Math.min(0.05, (t - lastT) / 1000);
+    lastT = t;
+    var elapsed = (t - partyStart) / 1000;
+
+    if(!partyEnding){
+      spawnB -= dt;
+      if(spawnB <= 0){ spawnBalloon(); spawnB = 0.5 + Math.random() * 0.5; }
+    }
+    spawnR -= dt;
+    if(spawnR <= 0){ launchRocket(); spawnR = partyEnding ? 0.25 : (0.9 + Math.random() * 0.9); }
+
+    for(var i=balloons.length-1;i>=0;i--){
+      var b = balloons[i];
+      if(b.popped){ balloons.splice(i,1); continue; }
+      b.y -= b.vy * dt;
+      b.phase += dt * b.sw;
+      b.curX = b.x + Math.sin(b.phase) * b.amp;
+      b.el.style.transform = "translate(" + b.curX.toFixed(1) + "px," + b.y.toFixed(1) + "px) rotate(" + (Math.sin(b.phase)*6).toFixed(1) + "deg)";
+      if(b.y < -b.h - 80){ b.el.remove(); balloons.splice(i,1); }
+    }
+
+    for(var r=rockets.length-1;r>=0;r--){
+      var rk = rockets[r];
+      rk.y += rk.vy * dt;
+      if(rk.y <= rk.ty){ explode(rk); rockets.splice(r,1); }
+    }
+
+    for(var k=particles.length-1;k>=0;k--){
+      var pt = particles[k];
+      pt.vy += 90 * dt;
+      pt.vx *= 0.985; pt.vy *= 0.985;
+      pt.x += pt.vx * dt; pt.y += pt.vy * dt;
+      pt.life -= dt;
+      if(pt.life <= 0) particles.splice(k,1);
+    }
+
+    fxCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+    for(var q=0;q<rockets.length;q++){
+      fxCtx.globalAlpha = 1;
+      fxCtx.fillStyle = rockets[q].color;
+      fxCtx.beginPath(); fxCtx.arc(rockets[q].x, rockets[q].y, 3, 0, Math.PI*2); fxCtx.fill();
+      fxCtx.globalAlpha = 0.35;
+      fxCtx.beginPath(); fxCtx.arc(rockets[q].x, rockets[q].y + 10, 2, 0, Math.PI*2); fxCtx.fill();
+    }
+    for(var z=0;z<particles.length;z++){
+      var pp = particles[z];
+      fxCtx.globalAlpha = Math.max(0, pp.life / pp.max);
+      fxCtx.fillStyle = pp.color;
+      fxCtx.beginPath(); fxCtx.arc(pp.x, pp.y, pp.size, 0, Math.PI*2); fxCtx.fill();
+    }
+    fxCtx.globalAlpha = 1;
+
+    // end after 12 pops or 30 seconds with a big fireworks finale
+    if(!partyEnding && (pops >= 12 || elapsed > 30)){
+      partyEnding = true;
+      for(var f=0;f<4;f++) launchRocket();
+      setTimeout(finishParty, 2600);
+    }
+
+    requestAnimationFrame(partyLoop);
+  }
+
+  function clearParty(){
+    balloons.forEach(function(b){ b.el.remove(); });
+    balloons = []; particles = []; rockets = [];
+    fxCtx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+  }
+
+  function startParty(done){
+    partyDone = done;
+    partyOn = true; partyEnding = false; pops = 0;
+    clearParty();
+    partyEl.style.display = "block";
+    void partyEl.offsetWidth;
+    partyEl.classList.add("on");
+    resizeFx();
+    lastT = performance.now(); partyStart = lastT;
+    spawnB = 0.2; spawnR = 0.6;
+    requestAnimationFrame(partyLoop);
+  }
+
+  function finishParty(){
+    if(!partyOn) return;
+    var done = partyDone;
+    stopParty();
+    if(done) done();
+  }
+
+  function stopParty(){
+    partyOn = false; partyEnding = false; partyDone = null;
+    partyEl.classList.remove("on");
+    setTimeout(function(){
+      if(!partyOn){ partyEl.style.display = "none"; clearParty(); }
+    }, 600);
+  }
+
   // ---------- Tilt drift: bubbles gently slide when the device is tilted ----------
   var tiltX = 0, tiltY = 0;
   var tiltRequested = false;
@@ -445,7 +698,7 @@
 
       wrap.dataset.drift = driftPxForSize(size);
       wrap.appendChild(tile);
-      wrap.addEventListener("click", function(){ enableTilt(); handleTap(item, tile, wrap); });
+      wrap.addEventListener("click", function(){ enableTilt(); audio(); handleTap(item, tile, wrap); });
       garden.appendChild(wrap);
     });
   }
@@ -485,7 +738,7 @@
         roundLangIndex++;
         release();
         if(garden.children.length === 0){
-          celebrateFinale(buildGarden);
+          celebrateFinale(function(){}); startParty(buildGarden);
         }
       })
       .catch(function(err){
@@ -495,6 +748,7 @@
   }
 
   homeBtn.addEventListener("click", function(){
+    if(partyOn){ stopParty(); }
     if(currentModeKey){ showModeSelect(); } else { showLangSelect(); }
   });
 
